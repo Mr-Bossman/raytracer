@@ -30,9 +30,12 @@ bool sdl_init()
                 printf("Unable to create renderer: %s", SDL_GetError());
                 sdl_free();
 			    success = false;
+
             }
-            SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+            SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "cubic");
             SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+            SDL_SetRelativeMouseMode( SDL_TRUE );
+            SDL_WarpMouseInWindow(gWindow, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
             texture = SDL_CreateTexture(
                 renderer,
                 SDL_PIXELFORMAT_RGB24,

@@ -51,7 +51,6 @@ int main() {
         exit(-1);
 	}
 
-	//Free resources and close SDL
     const Material      ivory = {1.0, {0.6,  0.3, 0.1, 0.0}, {0.4, 0.4, 0.3},   50.};
     const Material      glass = {1.5, {0.0,  0.5, 0.1, 0.8}, {0.6, 0.7, 0.8},  125.};
     const Material red_rubber = {1.0, {0.9,  0.1, 0.0, 0.0}, {0.3, 0.1, 0.1},   10.};
@@ -65,9 +64,9 @@ int main() {
     };
 
     std::vector<Light> lights = {
-        {{-20, 20,  20}, 1.5},
-        {{ 30, 50, -25}, 1.8},
-        {{ 30, 20,  30}, 1.7}
+        {{-20, 20,  20}, {1.5,1,1}},
+        {{ 30, 50, -25}, {1,1.8,1}},
+        {{ 30, 20,  30}, {1,1,1.7}}
     };
 
     Cam cam = {
@@ -79,45 +78,35 @@ int main() {
 
     while(1){
 
-        int x,y;
+        int xM,yM;
         SDL_PumpEvents();
+        const Uint8 *keystates = SDL_GetKeyboardState(NULL);
         while( SDL_PollEvent( &event ) )
         {      
             if( event.type == SDL_QUIT )
                 sdl_close(0);
             if(event.type == SDL_MOUSEMOTION){
-                SDL_GetMouseState(&x,&y);
+                //SDL_GetMouseState(&,&yM);
+                xM = event.motion.xrel;
+                yM = event.motion.yrel;
                 SDL_GetWindowSize(sdl_getwindow(), &winsizeX,&winsizeY);
-                cam.dir = vec3{((float)x)*((float)SCREEN_WIDTH/(float)winsizeX),((float)-y)*((float)SCREEN_HEIGHT/(float)winsizeY),0};
-            }
-            if( event.type == SDL_KEYDOWN )
-            {
-                        //Select surfaces based on key press
-                switch( event.key.keysym.sym )
-                {
-                case SDLK_w:
-                    cam.pos.z -= 1;
-                break;
-                case SDLK_s:
-                    cam.pos.z += 1;
-                break;
-                case SDLK_a:
-                    cam.pos.x -= 1;
-                break;
-                case SDLK_d:
-                    cam.pos.x += 1;
-                break;
-                case SDLK_SPACE:
-                    cam.pos.y += 1;
-                break;
-                case SDLK_LSHIFT:
-                    cam.pos.y -= 1;
-                break;
-                default:
-                break;
-                }
+                
+                cam.dir = cam.dir + vec3{xM*1.0,yM*1.0,0};
             }
         }
+
+        if(keystates[SDL_SCANCODE_W])
+            cam.pos.z--;
+        if(keystates[SDL_SCANCODE_S])
+            cam.pos.z++;
+        if(keystates[SDL_SCANCODE_A])
+            cam.pos.x--;
+        if(keystates[SDL_SCANCODE_D])
+            cam.pos.x++;
+        if(keystates[SDL_SCANCODE_SPACE])
+            cam.pos.y++;
+        if(keystates[SDL_SCANCODE_LSHIFT])
+            cam.pos.y--;
         render(spheres, lights,cam);
         sdl_frame();
     }

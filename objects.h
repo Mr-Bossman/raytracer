@@ -7,7 +7,7 @@
 
 struct Light {
     vec3 position;
-    float intensity;
+    vec3 intensity; // RGB
 };
 
 struct Material {

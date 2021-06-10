@@ -6,20 +6,24 @@
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
 template <size_t DIM> struct vec {
-          float& operator[](const size_t i)       { assert(i<DIM); return data[i]; }
-    const float& operator[](const size_t i) const { assert(i<DIM); return data[i]; }
-    float data[DIM] = {};
+          double& operator[](const size_t i)       { assert(i<DIM); return data[i]; }
+    const double& operator[](const size_t i) const { assert(i<DIM); return data[i]; }
+    double data[DIM] = {};
 };
 
-template<size_t DIM> vec<DIM> operator*(const vec<DIM> &lhs, const float rhs) {
+template<size_t DIM> vec<DIM> operator*(const vec<DIM> &lhs, const double rhs) {
     vec<DIM> ret;
     for (size_t i=DIM; i--; ret[i]=lhs[i]*rhs);
     return ret;
 }
-
-template<size_t DIM> float operator*(const vec<DIM>& lhs, const vec<DIM>& rhs) {
-    float ret = 0;
-    for (size_t i=DIM; i--; ret+=lhs[i]*rhs[i]);
+template<size_t DIM> vec<DIM> operator*(const vec<DIM>& lhs, const vec<DIM>& rhs) {
+    vec<DIM> ret;
+    for (size_t i=DIM; i--; ret[i]+=lhs[i]*rhs[i]);
+    return ret;
+}
+template<size_t DIM> double doub(const vec<DIM>& rhs) {
+    double ret = 0;
+    for (size_t i=DIM; i--; ret+=rhs[i]);
     return ret;
 }
 
@@ -38,11 +42,11 @@ template<size_t DIM> vec<DIM> operator-(const vec<DIM> &lhs) {
 }
 
 template <> struct vec<3> {
-          float& operator[](const size_t i)       { assert(i<3); return i==0 ? x : (1==i ? y : z); }
-    const float& operator[](const size_t i) const { assert(i<3); return i==0 ? x : (1==i ? y : z); }
-    float norm() { return std::sqrt(x*x+y*y+z*z); }
-    vec<3> & normalize(float l=1) { *this = (*this)*(l/norm()); return *this; }
-    float x = 0, y = 0, z = 0;
+          double& operator[](const size_t i)       { assert(i<3); return i==0 ? x : (1==i ? y : z); }
+    const double& operator[](const size_t i) const { assert(i<3); return i==0 ? x : (1==i ? y : z); }
+    double norm() { return std::sqrt(x*x+y*y+z*z); }
+    vec<3> & normalize(double l=1) { *this = (*this)*(l/norm()); return *this; }
+    double x = 0, y = 0, z = 0;
 };
 
 typedef vec<3> vec3;
