@@ -1,0 +1,17 @@
+#include <csignal>
+#include <limits>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <SDL2/SDL.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <iostream>
+#include <cstdlib>
+#include <signal.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <atomic>
+#include <thread>
+#include <cmath>
+#include <cassert>
