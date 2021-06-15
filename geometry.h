@@ -5,6 +5,7 @@
 
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
+/*
 template <size_t DIM> struct vec {
           double& operator[](const size_t i)       { assert(i<DIM); return data[i]; }
     const double& operator[](const size_t i) const { assert(i<DIM); return data[i]; }
@@ -61,6 +62,6 @@ template <size_t DIM> std::ostream& operator<<(std::ostream& out, const vec<DIM>
         out << v[i] << " " ;
     return out ;
 }
-
+*/
 #endif //__GEOMETRY_H__
 

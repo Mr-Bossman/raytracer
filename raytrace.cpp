@@ -5,8 +5,8 @@
 
 bool ray_sphere_intersect(const vec3 &orig, const vec3 &dir, const Sphere &s, double &t0) {
     vec3 L = s.center - orig;
-    double tca = doub(L*dir);
-    double d2 =  doub(L*L) - tca*tca;
+    double tca = (L*dir).doub();
+    double d2 =  (L*L).doub() - tca*tca;
     if (d2 > s.radius*s.radius) return false;
     double thc = sqrtf(s.radius*s.radius - d2);
     t0       = tca - thc;
@@ -21,7 +21,7 @@ vec3 reflect(const vec3 &I, const vec3 &N) {
 }
 
 vec3 refract(const vec3 &I, const vec3 &N, const double eta_t, const double eta_i) { // Snell's law
-    double cosi = - std::max(-1., std::min(1., doub(I*N)));
+    double cosi = - std::max(-1., std::min(1., (I*N).doub()));
     if (cosi<0) return refract(I, -N, eta_i, eta_t); // if the ray comes from the inside the object, swap the air and the media
     double eta = eta_i / eta_t;
     double k = 1 - eta*eta*(1 - cosi*cosi);
@@ -48,25 +48,25 @@ bool scene_intersect(const vec3 &orig, const vec3 &dir, const std::vector<Sphere
             checkerboard_dist = d;
             hit = pt;
             N = vec3{0,1,0};
-            material.diffuse_color = (int(.5*hit.x+1000) + int(.5*hit.z)) & 1 ? vec3{.3, .3, .3} : vec3{.3, .2, .1};
+            material.diffuse_color = (int(0.5*hit.x+1000) + int(0.5*hit.z)) & 1 ? color{.3, .3, .3} : color{.3, .2, .1};
         }
     }
     return std::min(spheres_dist, checkerboard_dist)<1000;
 }
 
-vec3 cast_ray(const vec3 &orig, const vec3 &dir, const std::vector<Sphere> &spheres, const std::vector<Light> &lights, size_t depth) {
+color cast_ray(const vec3 &orig, const vec3 &dir, const std::vector<Sphere> &spheres, const std::vector<Light> &lights, size_t depth) {
     vec3 point, N;
     Material material;
 
     if (depth>4 || !scene_intersect(orig, dir, spheres, point, N, material))
-        return vec3{0.2, 0.7, 0.8}; // background color
+        return color{0.2, 0.7, 0.8}; // background color
 
     vec3 reflect_dir = reflect(dir, N).normalize();
     vec3 refract_dir = refract(dir, N, material.refractive_index).normalize();
-    vec3 reflect_color = cast_ray(point, reflect_dir, spheres, lights, depth + 1);
-    vec3 refract_color = cast_ray(point, refract_dir, spheres, lights, depth + 1);
+    color reflect_color = cast_ray(point, reflect_dir, spheres, lights, depth + 1);
+    color refract_color = cast_ray(point, refract_dir, spheres, lights, depth + 1);
 
-    vec3 diffuse_light_intensity = {0,0,0}, specular_light_intensity = {0,0,0};
+    color diffuse_light_intensity = {0,0,0}, specular_light_intensity = {0,0,0};
     for (const Light light : lights) {
         vec3 light_dir      = (light.position - point).normalize();
 
@@ -76,8 +76,8 @@ vec3 cast_ray(const vec3 &orig, const vec3 &dir, const std::vector<Sphere> &sphe
                 (shadow_pt-point).norm() < (light.position-point).norm()) // checking if the point lies in the shadow of the light
             continue;
 
-        diffuse_light_intensity = diffuse_light_intensity  + (light.intensity * std::max(0.,  doub(light_dir*N)));
-        specular_light_intensity = specular_light_intensity + (light.intensity * std::pow(std::max(0., doub(-reflect(-light_dir, N)*dir)), material.specular_exponent));
+        diffuse_light_intensity = diffuse_light_intensity  + (light.intensity * std::max(0.,  (light_dir*N).doub()));
+        specular_light_intensity = specular_light_intensity + (light.intensity * std::pow(std::max(0., (-reflect(-light_dir, N)*dir).doub()), material.specular_exponent));
     }
     return (material.diffuse_color * diffuse_light_intensity) * material.albedo[0] + (specular_light_intensity * material.albedo[1]) + reflect_color*material.albedo[2] + refract_color*material.albedo[3];
 }

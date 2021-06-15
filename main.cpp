@@ -5,12 +5,12 @@
 #include "sdl_funcs.h"
 #include "objects.h"
 #include "raytrace.h"
-
+#include "vector.h"
 SDL_Event event;
 
 void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights,const Cam &cam) {
     const float fov  = cam.fov;
-    std::vector<vec3> framebuffer(SCREEN_WIDTH*SCREEN_HEIGHT);
+    std::vector<color> framebuffer(SCREEN_WIDTH*SCREEN_HEIGHT);
 
 
     #pragma omp parallel for
@@ -23,14 +23,11 @@ void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights
         }
     }
     size_t index = 0;
-    char * texture_pixels = sdl_pixels_lock();
+    char  *texture_pixels = sdl_pixels_lock();
+    for (color &c : framebuffer) {
 
-    for (vec3 &c : framebuffer) {
-        float max = std::max(c[0], std::max(c[1], c[2]));
-        if (max>1) c = c*(1./max);
-        texture_pixels[index++] = (char)(255 * c[0]); 
-        texture_pixels[index++] = (char)(255 * c[1]);
-        texture_pixels[index++] = (char)(255 * c[2]);
+        c.rgb(texture_pixels+index);
+        index += 3;
     }
     sdl_pixels_unlock();
 
@@ -94,7 +91,8 @@ int main() {
                 cam.dir = cam.dir + vec3{xM*1.0,yM*1.0,0};
             }
         }
-
+        if(keystates[SDL_SCANCODE_ESCAPE])
+            signal_hand(0);
         if(keystates[SDL_SCANCODE_W])
             cam.pos.z--;
         if(keystates[SDL_SCANCODE_S])
