@@ -7,7 +7,23 @@
 #include "raytrace.h"
 #include "vector.h"
 SDL_Event event;
+vec3 rotate(vec3 v, const vec3 k)
+{
+    double cos_theta = cos(k.x);
+    double sin_theta = sin(k.x);
+    v = (v * cos_theta) + (vec3(1,0,0).cross(v) * sin_theta) + (vec3(1,0,0) * vec3(1,0,0).dot(v)) * (1 - cos_theta);
 
+
+    cos_theta = cos(k.y);
+    sin_theta = sin(k.y);
+    v = (v * cos_theta) + (vec3(0,1,0).cross(v) * sin_theta) + (vec3(0,1,0) * vec3(0,1,0).dot(v)) * (1 - cos_theta);
+    
+    cos_theta = cos(k.z);
+    sin_theta = sin(k.z);
+    v = (v * cos_theta) + (vec3(0,0,1).cross(v) * sin_theta) + (vec3(0,0,1) * vec3(0,0,1).dot(v)) * (1 - cos_theta);
+
+    return v;
+}
 void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights,const Cam &cam) {
     const float fov  = cam.fov;
     std::vector<color> framebuffer(SCREEN_WIDTH*SCREEN_HEIGHT);
@@ -19,7 +35,7 @@ void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights
             float dir_x =  (i + 0.5) -  SCREEN_WIDTH/2.;
             float dir_y = -(j + 0.5) + SCREEN_HEIGHT/2.;    // this flips the image at the same time
             float dir_z = -SCREEN_HEIGHT/(2.*tan(fov/2.));
-            framebuffer[i+j*SCREEN_WIDTH] = cast_ray(cam.pos, ((vec3{dir_x, dir_y, dir_z}+cam.dir)).normalize(), spheres, lights);
+            framebuffer[i+j*SCREEN_WIDTH] = cast_ray(cam.pos, rotate(vec3{dir_x, dir_y, dir_z},cam.dir).normalize(), spheres, lights);
         }
     }
     size_t index = 0;
@@ -34,6 +50,8 @@ void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights
 
     
 }
+
+
 void signal_hand(int signum) {
    std::cout << "Caught signal " << signum << std::endl;
    sdl_close(0);
@@ -68,14 +86,13 @@ int main() {
 
     Cam cam = {
         {1,1,0},
-        {-1,-1,0},
+        {1,1,0},
         M_PI_2
     };
 
-
+    int xM = 0,yM = 0;
     while(1){
 
-        int xM,yM;
         SDL_PumpEvents();
         const Uint8 *keystates = SDL_GetKeyboardState(NULL);
         while( SDL_PollEvent( &event ) )
@@ -84,23 +101,22 @@ int main() {
                 sdl_close(0);
             if(event.type == SDL_MOUSEMOTION){
                 //SDL_GetMouseState(&,&yM);
-                xM = event.motion.xrel;
-                yM = event.motion.yrel;
+                xM += event.motion.xrel;
+                yM += event.motion.yrel;
                 SDL_GetWindowSize(sdl_getwindow(), &winsizeX,&winsizeY);
-                
-                cam.dir = cam.dir + vec3{xM*1.0,yM*1.0,0};
+                cam.dir = vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1,0};
             }
         }
         if(keystates[SDL_SCANCODE_ESCAPE])
             signal_hand(0);
         if(keystates[SDL_SCANCODE_W])
-            cam.pos.z--;
+            cam.pos -= rotate(vec3{0,0,1},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
         if(keystates[SDL_SCANCODE_S])
-            cam.pos.z++;
+            cam.pos += rotate(vec3{0,0,1},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
         if(keystates[SDL_SCANCODE_A])
-            cam.pos.x--;
+            cam.pos -= rotate(vec3{1,0,0},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
         if(keystates[SDL_SCANCODE_D])
-            cam.pos.x++;
+            cam.pos += rotate(vec3{1,0,0},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
         if(keystates[SDL_SCANCODE_SPACE])
             cam.pos.y++;
         if(keystates[SDL_SCANCODE_LSHIFT])

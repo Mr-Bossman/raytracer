@@ -114,7 +114,9 @@ class vec3 {
         for (size_t i=3; i--; ret+=(*this)[i]);
         return ret;
     }
-
+    inline double dot(const vec3 rhs) const {
+        return (rhs*(*this)).doub();
+    }
 
     vec3 cross(const vec3  rhs) const {
         return vec3{ (*this)[1]*rhs[2] - (*this)[2]*rhs[1], (*this)[2]*rhs[0] - (*this)[0]*rhs[2] ,(*this)[0]*rhs[1]- (*this)[1]*rhs[0]};
