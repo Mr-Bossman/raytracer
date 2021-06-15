@@ -1,13 +1,5 @@
-# Ignore all
 *
-
-# Unignore all with extensions
 !*.*
 !Makefile
-# Unignore all dirs
 !*/
-
-### Above combination will ignore all files without extension ###
-
-# Ignore files with extension `.class` & `.sm`
 *.o
