@@ -259,19 +259,21 @@ class color {
         return color{0,0,0};
 
     }
-    void rgb(char colors[3]){
+    void rgb(char colors[3]) const {
+        color tmp = (*this);
         double max = std::max((*this)[0], std::max((*this)[1], (*this)[2]));
-        if (max>1)  (*this) *= (1./max);
-        colors[0] = 255*(*this)[0];
-        colors[1] = 255*(*this)[1];
-        colors[2] = 255*(*this)[2];
+        if (max>1)  tmp *= (1./max);
+        colors[0] = 255*tmp[0];
+        colors[1] = 255*tmp[1];
+        colors[2] = 255*tmp[2];
     }
-    void rgba(char colors[4]){
+    void rgba(char colors[4]) const {
+        color tmp = (*this);
         double max = std::max((*this)[0], std::max((*this)[1], (*this)[2]));
-        if (max>1) (*this) *= (1./max);
-        colors[0] = 255*(*this)[0];
-        colors[1] = 255*(*this)[1];
-        colors[2] = 255*(*this)[2];
+        if (max>1) tmp *= (1./max);
+        colors[0] = 255*tmp[0];
+        colors[1] = 255*tmp[1];
+        colors[2] = 255*tmp[2];
         colors[3] = 255*(*this)[3];
     }
     double norm() const { return std::sqrt((*this)[0]*(*this)[0]+(*this)[1]*(*this)[1]+(*this)[2]*(*this)[2]); }
