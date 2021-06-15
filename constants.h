@@ -4,4 +4,7 @@ const int SCREEN_WIDTH = 256*2;
 const int SCREEN_HEIGHT = 144*2;
 const int WINDOW_WIDTH = 640*6;
 const int WINDOW_HEIGHT = 480*6;
+#define antialias true
+#define MOUSE_SENSITIVITY 5
+#define MOVEMENT_SPEED 1.5
 #endif // __CONSTANTS_H__

@@ -7,39 +7,19 @@
 #include "raytrace.h"
 #include "vector.h"
 SDL_Event event;
-struct rgb {
-    char r;
-    char g;
-    char b;
-};
 rgb colorC(const color c) {
     rgb colors;
     char * arr = (char*)&colors;
     c.rgb(arr);
     return colors;
 }
-class frame{
-    public:
-    size_t height;
-    size_t width;
-    rgb *framebuffer;
-    frame(size_t height_, size_t width_){
-        framebuffer = (rgb*)sdl_pixels_lock();
-        height = height_;
-        width = width_;
-    }
-    ~frame(){
-        sdl_pixels_unlock();
-    }
-    rgb* operator[](const size_t h) {return framebuffer+h*width; }
-    const rgb* operator[](const size_t h) const {return framebuffer+h*width; }
-};
 
 double alias[2] = {.25,.5};
 int threshold[2] = {30,10}; // corners sides
 inline bool checkT(rgb ca, rgb cb,int t){
     return ((abs(((int)ca.r)-((int)cb.r)) +abs(((int)ca.g)-((int)cb.g)) + abs(((int)ca.b)-((int)cb.b)) > t*3));
 }
+
 vec3 rotate(vec3 v, const vec3 k)
 {
     double cos_theta = cos(k.x);
@@ -57,10 +37,13 @@ vec3 rotate(vec3 v, const vec3 k)
 
     return v;
 }
+
 void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights,const Cam &cam) {
     const float fov  = cam.fov;
-    rgb frame1[SCREEN_HEIGHT+2][SCREEN_WIDTH+2];
     frame framebuffer(SCREEN_HEIGHT,SCREEN_WIDTH);
+    #if antialias 
+    rgb frame1[SCREEN_HEIGHT+2][SCREEN_WIDTH+2];
+    #endif
 
     #pragma omp parallel for
     for (size_t j = 0; j<SCREEN_HEIGHT; j++) { // actual rendering loop
@@ -68,9 +51,14 @@ void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights
             double dir_x =  (i + 0.5) -  SCREEN_WIDTH/2.;
             double dir_y = -(j + 0.5) + SCREEN_HEIGHT/2.;    // this flips the image at the same time
             double dir_z = -SCREEN_HEIGHT/(2.*tan(fov/2.));
-            framebuffer[j][i] = frame1[j][i] = colorC(cast_ray(cam.pos, rotate(vec3{dir_x, dir_y, dir_z},cam.dir).normalize(), spheres, lights));
+            framebuffer[j][i] = colorC(cast_ray(cam.pos, rotate(vec3{dir_x, dir_y, dir_z},cam.dir).normalize(), spheres, lights));
+            
+            #if antialias 
+            frame1[j][i] = framebuffer[j][i];
+            #endif
         }
     }
+    #if antialias 
     #pragma omp parallel for
     for (size_t j = 0; j<SCREEN_HEIGHT; j++) { // actual rendering loop
         for (size_t i = 0; i<SCREEN_WIDTH; i++) {
@@ -102,6 +90,7 @@ void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights
             }
         }
     }
+    #endif
 }
 
 
@@ -155,8 +144,8 @@ int main() {
                 sdl_close(0);
             if(event.type == SDL_MOUSEMOTION){
                 //SDL_GetMouseState(&,&yM);
-                xM += event.motion.xrel;
-                yM += event.motion.yrel;
+                xM += event.motion.xrel*MOUSE_SENSITIVITY;
+                yM += event.motion.yrel*MOUSE_SENSITIVITY;
                 SDL_GetWindowSize(sdl_getwindow(), &winsizeX,&winsizeY);
                 cam.dir = vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1,0};
             }
@@ -164,17 +153,17 @@ int main() {
         if(keystates[SDL_SCANCODE_ESCAPE])
             signal_hand(0);
         if(keystates[SDL_SCANCODE_W])
-            cam.pos -= rotate(vec3{0,0,1},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
+            cam.pos -= rotate(vec3{0,0,MOVEMENT_SPEED},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
         if(keystates[SDL_SCANCODE_S])
-            cam.pos += rotate(vec3{0,0,1},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
+            cam.pos += rotate(vec3{0,0,MOVEMENT_SPEED},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
         if(keystates[SDL_SCANCODE_A])
-            cam.pos -= rotate(vec3{1,0,0},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
+            cam.pos -= rotate(vec3{MOVEMENT_SPEED,0,0},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
         if(keystates[SDL_SCANCODE_D])
-            cam.pos += rotate(vec3{1,0,0},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
+            cam.pos += rotate(vec3{MOVEMENT_SPEED,0,0},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
         if(keystates[SDL_SCANCODE_SPACE])
-            cam.pos.y++;
+            cam.pos.y += MOVEMENT_SPEED;
         if(keystates[SDL_SCANCODE_LSHIFT])
-            cam.pos.y--;
+            cam.pos.y -= MOVEMENT_SPEED;
         render(spheres, lights,cam);
         sdl_frame();
     }
