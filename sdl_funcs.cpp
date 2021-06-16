@@ -1,9 +1,11 @@
 #include "common.h"
 #include "sdl_funcs.h"
 #include "constants.h"
+#include <SDL2/SDL_ttf.h>
 static SDL_Window* gWindow = NULL;
 static SDL_Renderer* renderer = NULL;
 static SDL_Texture *texture = NULL;
+SDL_Texture* Message = NULL;
 SDL_Window* sdl_getwindow(){
     return gWindow;
 }
@@ -78,6 +80,7 @@ void sdl_free()
 }
 void sdl_frame(){
         SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, Message, NULL, NULL);
         SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
 }
@@ -93,4 +96,12 @@ char * sdl_pixels_lock(){
 }
 void sdl_pixels_unlock(){
     SDL_UnlockTexture(texture);
+}
+void sdl_text(char * str){ // doesnt work yet
+    TTF_Font* Sans = TTF_OpenFont("Sans.ttf", 24);
+    SDL_Color White = {255, 255, 255};
+    SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, str, White); 
+    Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+    SDL_FreeSurface(surfaceMessage);
+    SDL_DestroyTexture(Message);
 }

@@ -31,4 +31,5 @@ class frame{
     rgb* operator[](const size_t h) {return framebuffer+h*width; }
     const rgb* operator[](const size_t h) const {return framebuffer+h*width; }
 };
+void sdl_text(char * str);
 #endif //__SDL_FUNC_H__
