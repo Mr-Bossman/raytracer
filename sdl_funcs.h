@@ -8,4 +8,5 @@ void sdl_free();
 void sdl_frame();
 char * sdl_pixels_lock();
 void sdl_pixels_unlock();
+void sdl_text(char * str);
 #endif //__SDL_FUNC_H__

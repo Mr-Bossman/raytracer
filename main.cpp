@@ -61,7 +61,9 @@ vec3 rotate(vec3 v, const vec3 k)
 
 void render(const Objects &spheres, const Lights &lights,const Cam &cam) {
     const float fov  = cam.fov;
+    #if ANTIALIAS 
     rgb frame1[SCREEN_HEIGHT+2][SCREEN_WIDTH+2];
+    #endif
     frame framebuffer(SCREEN_HEIGHT,SCREEN_WIDTH);
 
     #pragma omp parallel for
@@ -72,11 +74,12 @@ void render(const Objects &spheres, const Lights &lights,const Cam &cam) {
             double dir_z = -SCREEN_HEIGHT/(2.*tan(fov/2.));
             framebuffer[j][i] = colorC(cast_ray(cam.pos, rotate(vec3{dir_x, dir_y, dir_z},cam.dir).normalize(), spheres, lights));
             
-            #if antialias 
+            #if ANTIALIAS 
             frame1[j][i] = framebuffer[j][i];
             #endif
         }
     }
+    #if ANTIALIAS 
     #pragma omp parallel for
     for (size_t j = 0; j<SCREEN_HEIGHT; j++) { // actual rendering loop
         for (size_t i = 0; i<SCREEN_WIDTH; i++) {
@@ -108,6 +111,7 @@ void render(const Objects &spheres, const Lights &lights,const Cam &cam) {
             }
         }
     }
+    #endif
 }
 
 
@@ -125,13 +129,13 @@ void create_objects(Objects& objects ,Lights& lights){
     const Material       wood = {1.0, {1.2,  0.1, 0.0, 0.0}, {0.2, 0.1, 0.02},    1.};
 
     objects ={{
-        Sphere{vec3{-3,    0,   -16}, 2,      ivory},
+        /*Sphere{vec3{-3,    0,   -16}, 2,      ivory},
         Sphere{vec3{-1.0, -1.5, -12}, 2,      glass},
         Sphere{vec3{ 1.5, -0.5, -18}, 3, red_rubber},
         Sphere{vec3{ 7,    5,   -18}, 4,     mirror},
-        Sphere{vec3{-3,    10,   -17}, 2,      wood}
+        Sphere{vec3{-3,    10,   -17}, 2,      wood}*/
     },{
-        Triangle{vec3{-3,    0,   -16},vec3{-3,    10,   -17},vec3{ 7,    5,   -18},red_rubber}
+        //Triangle{vec3{-3,    0,   -16},vec3{-3,    10,   -17},vec3{ 7,    5,   -18},red_rubber}
     }
     };
 
@@ -153,8 +157,8 @@ int main(int argc, char*argv[]) {
 	}
 
     Cam cam = {
-        {10,10,0},
-        {0,-1,0},
+        {-1.8,12.2,16.8},
+        {-0.52,-0.30,0.},
         M_PI_2
     };
     std::vector<STL_Triangle> triangles;
@@ -166,10 +170,9 @@ int main(int argc, char*argv[]) {
     create_objects(objects,lights);
     int xM = 0,yM = 0;
 
-    const Material      default_mat = {1.0, {0.6,  0.3, 0.1, 0.0}, {0.4, 0.4, 0.3},   50.};
-
+    const Material      default_mat = {1.0, {0.9,  0.1, 0.0, 0.0}, {0.3, 0.1, 0.1},   10.};
     for(STL_Triangle t: triangles){
-        objects.triangle.push_back(Triangle{vec3{t.a[0],t.a[1],t.a[2]},vec3{t.b[0],t.b[1],t.b[2]},vec3{t.c[0],t.c[1],t.c[2]},default_mat});
+        objects.triangle.push_back(Triangle{vec3{t.a[0],t.a[2],t.a[1]},vec3{t.c[0],t.c[2],t.c[1]},vec3{t.b[0],t.b[2],t.b[1]},default_mat});
     }
     while(1){
 
@@ -202,6 +205,7 @@ int main(int argc, char*argv[]) {
         if(keystates[SDL_SCANCODE_LSHIFT])
             cam.pos.y -= MOVEMENT_SPEED;
         render(objects, lights,cam);
+        //SDL_Log("{%lf,%lf,%lf},{%lf,%lf,%lf}",cam.pos.x,cam.pos.y,cam.pos.z,cam.dir.x,cam.dir.y,cam.dir.z);
         sdl_frame();
     }
     sdl_free();
