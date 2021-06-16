@@ -6,6 +6,7 @@
 #include "objects.h"
 #include "raytrace.h"
 #include "vector.h"
+#include "stl.h"
 SDL_Event event;
 struct rgb {
     char r;
@@ -112,6 +113,7 @@ void render(const Objects &spheres, const Lights &lights,const Cam &cam) {
 
 void signal_hand(int signum) {
    std::cout << "Caught signal " << signum << std::endl;
+   #pragma omp flush // fix seg fault from open mp accesing sdl doesnt work though
    sdl_pixels_unlock();
    sdl_close(0);
 }
@@ -141,8 +143,8 @@ void create_objects(Objects& objects ,Lights& lights){
     };
 
 }
-int main() {
-    int winsizeX, winsizeY;
+
+int main(int argc, char*argv[]) {
     signal(SIGINT, signal_hand);
 	if( !sdl_init() )
 	{
@@ -151,14 +153,24 @@ int main() {
 	}
 
     Cam cam = {
-        {1,1,0},
-        {1,1,0},
+        {10,10,0},
+        {0,-1,0},
         M_PI_2
     };
+    std::vector<STL_Triangle> triangles;
+    if(argc == 2)
+        triangles = parsestl(std::string(argv[1]));
+    int winsizeX, winsizeY;
     Objects objects;
     Lights lights;
     create_objects(objects,lights);
     int xM = 0,yM = 0;
+
+    const Material      default_mat = {1.0, {0.6,  0.3, 0.1, 0.0}, {0.4, 0.4, 0.3},   50.};
+
+    for(STL_Triangle t: triangles){
+        objects.triangle.push_back(Triangle{vec3{t.a[0],t.a[1],t.a[2]},vec3{t.b[0],t.b[1],t.b[2]},vec3{t.c[0],t.c[1],t.c[2]},default_mat});
+    }
     while(1){
 
         SDL_PumpEvents();

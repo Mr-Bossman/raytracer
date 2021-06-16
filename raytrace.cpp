@@ -77,16 +77,18 @@ bool scene_intersect(const vec3 &orig, const vec3 &dir, const Objects &obj, vec3
     //do other shapes
 
     double checkerboard_dist = std::numeric_limits<double>::max();
+    #if PLANE
     if (std::abs(dir.y)>EPSILON) { // avoid division by zero
         double d = -(orig.y+4)/dir.y; // the checkerboard plane has equation y = -4
         vec3 pt = orig + dir*d;
-        if (d>EPSILON&& fabs(pt.x)<10 && pt.z<-10 && pt.z>-30 && d<spheres_dist && d < triangle_dist) {
+        if (d>EPSILON&& fabs(pt.x)<80 && fabs(pt.z)<80 && d<spheres_dist && d < triangle_dist) {
             checkerboard_dist = d;
             hit = pt;
             N = vec3{0,1,0};
-            material.diffuse_color = (int(0.5*hit.x+RENDER_DIST) + int(0.5*hit.z)) & 1 ? color{.3, .3, .3} : color{.3, .2, .1};
+            material.diffuse_color = (int(0.5*hit.x+RENDER_DIST) + int(0.5*hit.z+RENDER_DIST)) & 1 ? color{.3, .3, .3} : color{.3, .2, .1};
         }
     }
+    #endif
     return std::min(triangle_dist, std::min(spheres_dist, checkerboard_dist))<RENDER_DIST;
 }
 

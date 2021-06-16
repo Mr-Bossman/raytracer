@@ -1,3 +1,4 @@
+#define NO_STDIO_REDIRECT
 #include <csignal>
 #include <limits>
 #include <fstream>
