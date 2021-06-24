@@ -14,7 +14,22 @@ struct rgb {
     char g;
     char b;
 };
-
+class frame32{
+    public:
+    size_t height;
+    size_t width;
+    uint32_t *framebuffer;
+    frame32(size_t height_, size_t width_){
+        framebuffer = (uint32_t*)sdl_pixels_lock();
+        height = height_;
+        width = width_;
+    }
+    ~frame32(){
+        sdl_pixels_unlock();
+    }
+    uint32_t* operator[](const size_t h) {return framebuffer+h*width; }
+    const uint32_t* operator[](const size_t h) const {return framebuffer+h*width; }
+};
 class frame{
     public:
     size_t height;

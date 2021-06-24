@@ -40,7 +40,7 @@ bool sdl_init()
             SDL_WarpMouseInWindow(gWindow, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
             texture = SDL_CreateTexture(
                 renderer,
-                SDL_PIXELFORMAT_RGB24,
+                SDL_PIXELFORMAT_RGBA32,
                 SDL_TEXTUREACCESS_STREAMING,
                 SCREEN_WIDTH,
                 SCREEN_HEIGHT);

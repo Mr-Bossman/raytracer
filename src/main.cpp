@@ -7,6 +7,7 @@
 #include "raytrace.h"
 #include "vector.h"
 #include "stl.h"
+#include "../bin/ray.h"
 
 std::atomic<bool> end (false);
 SDL_Event event;
@@ -129,6 +130,32 @@ void create_objects(Objects& objects ,Lights& lights){
     };
 
 }
+void renderFUTH(Cam c,Objects ob){
+    frame32 framebuffer(SCREEN_HEIGHT,SCREEN_WIDTH);
+    uint32_t *pix = new uint32_t[SCREEN_HEIGHT*SCREEN_WIDTH];
+    struct futhark_context_config *cfg = futhark_context_config_new();
+    struct futhark_context *ctx = futhark_context_new(cfg);
+    struct futhark_u32_2d *pixels;
+    struct futhark_opaque_state *state;
+    struct futhark_opaque_vec3 *vec;
+    struct futhark_opaque_sphere *sphere;
+    pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
+    futhark_entry_Vec(ctx, &vec,1,1,1);
+    futhark_entry_Sphere(ctx, &sphere,vec,1);
+    futhark_entry_State(ctx, &state,sphere,SCREEN_HEIGHT,SCREEN_WIDTH);
+    futhark_entry_main(ctx,&pixels,SCREEN_WIDTH, SCREEN_HEIGHT, state);
+    futhark_values_u32_2d(ctx,pixels,pix);
+    futhark_context_sync(ctx);
+    futhark_context_free(ctx);
+    futhark_context_config_free(cfg);
+    #pragma omp parallel for
+    for (size_t j = 0; j<SCREEN_HEIGHT; j++) { // actual rendering loop
+        for (size_t i = 0; i<SCREEN_WIDTH; i++) {
+            framebuffer[j][i] = pix[(j*SCREEN_WIDTH) + i];
+        }
+    }
+    delete[] pix;
+}
 void esc(){
     while(1){
         SDL_PumpEvents();
@@ -198,7 +225,8 @@ int main(int argc, char*argv[]) {
             cam.pos.y += MOVEMENT_SPEED;
         if(keystates[SDL_SCANCODE_LSHIFT])
             cam.pos.y -= MOVEMENT_SPEED;
-        render(objects, lights,cam);
+        //render(objects, lights,cam);
+        renderFUTH(cam,objects);
         if(end)signal_hand(0);
         //SDL_Log("{%lf,%lf,%lf},{%lf,%lf,%lf}",cam.pos.x,cam.pos.y,cam.pos.z,cam.dir.x,cam.dir.y,cam.dir.z);
         sdl_frame();
