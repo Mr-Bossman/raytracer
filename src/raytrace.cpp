@@ -88,7 +88,7 @@ bool scene_intersect(const vec3 &orig, const vec3 &dir, const Objects &obj, vec3
     #endif
     return dist <RENDER_DIST;
 }
-
+//:(hit:bool,hitP:vec3,Norm:vec3,mat:material)
 color cast_ray(const vec3 &orig, const vec3 &dir, const Objects &obj, const Lights &lights, size_t depth) {
     vec3 point, N;
     Material material;

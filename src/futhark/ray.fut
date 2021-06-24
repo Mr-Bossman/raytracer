@@ -46,16 +46,24 @@ let ray_sphere_intersect (r:ray) (s:sphere) =
 
 
 
+let scene_intersect (s:state)(r:ray) = 
+    let (t0,hit) = ray_sphere_intersect r s.s 
+    in if hit then
+        let h = vec.(r.o + vec.scale t0 r.d)
+        let N = vec.normalise(vec.(h - s.s.o))
+        in (hit,h,N,s.s.mat)
+    else (hit,{x=0,y=0,z=0},{x=0,y=0,z=0},s.s.mat)
+
 
 
 let ray_cast (s:state) (h) (w):u32 = 
-let x = ((f64.i64 w)+0.5)-((f64.u32 s.w)/2)
-let y = -((f64.i64 h)+0.5)+((f64.u32 s.h)/2)
-let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
-let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
-let r:ray = {o=s.c.c.o,d=d}
-let (t0,hit) = ray_sphere_intersect r s.s 
-in if(hit)then (u32color s.s.mat.diffuse_color) else u32color bgC
+    let x = ((f64.i64 w)+0.5)-((f64.u32 s.w)/2)
+    let y = -((f64.i64 h)+0.5)+((f64.u32 s.h)/2)
+    let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
+    let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
+    let r:ray = {o=s.c.c.o,d=d}
+    let (hit,h,N,mat) = scene_intersect s r 
+    in if(hit) then u32color mat.diffuse_color else u32color bgC
 
 entry main (h:i64) (w:i64) (s:state):[h][w]u32 = 
 let s:state = s with h = u32.i64 h with w = u32.i64 w 
