@@ -5,10 +5,11 @@ module vec = mk_vspace_3d f64
 type vec3 = vec.vector
 
 type ray = {o:vec3,d:vec3}
-
-type sphere = {o:vec3,r:f64}
-
 type cam = {c:ray,fov:f64}
+type albedo = {a:f64,D:f64,at:f64,ap:f64}
+type material = {refractive_index:f64,albedo:albedo,diffuse_color:vec3,specular_exponent:f64}
+
+type sphere = {o:vec3,r:f64,mat:material}
 
 
 type triangle = (vec3,vec3,vec3,vec3)

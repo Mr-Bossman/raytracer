@@ -13,6 +13,7 @@ std::atomic<bool> end (false);
 SDL_Event event;
 void signal_hand(int signum) {
    std::cout << "Caught signal " << signum << std::endl;
+   usleep(500000);
    sdl_pixels_unlock();
    sdl_close(0);
    exit(0);
@@ -161,7 +162,7 @@ void esc(){
             end = true;
             return;
         }
-        sleep(0.2);
+        usleep(200000);
     }
 }
 int main(int argc, char*argv[]) {
