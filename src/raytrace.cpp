@@ -1,8 +1,4 @@
-#include "common.h"
 #include "raytrace.h"
-#include "geometry.h"
-#include "objects.h"
-#include "constants.h"
 bool ray_sphere_intersect(const vec3 &orig, const vec3 &dir, const Sphere &s, double &t0) {
     vec3 L = s.center - orig;
     double tca = (L*dir).doub();

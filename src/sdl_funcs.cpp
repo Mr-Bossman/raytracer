@@ -1,7 +1,4 @@
-#include "common.h"
 #include "sdl_funcs.h"
-#include "constants.h"
-#include <SDL2/SDL_ttf.h>
 static SDL_Window* gWindow = NULL;
 static SDL_Renderer* renderer = NULL;
 static SDL_Texture *texture = NULL;

@@ -1,7 +1,7 @@
 #include "common.h"
-#include "geometry.h"
 #include "objects.h"
 #include "vector.h"
+#include "constants.h"
 #ifndef __RAYTRACE_H__
 #define __RAYTRACE_H__
 bool ray_sphere_intersect(const vec3 &orig, const vec3 &dir, const Sphere &s, double &t0);

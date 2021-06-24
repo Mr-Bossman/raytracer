@@ -1,3 +1,4 @@
 /futhark
+/src/futhark/lib
 /bin/*
 *.o

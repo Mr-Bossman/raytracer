@@ -1,6 +1,4 @@
 #include "stl.h"
-#include "common.h"
-
 struct STL_Triangle_Head
 {
     uint8_t header[80];

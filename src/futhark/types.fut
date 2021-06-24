@@ -7,6 +7,7 @@ type vec3 = vec.vector
 type ray = {o:vec3,d:vec3}
 
 type sphere = {o:vec3,r:f64}
+
 type cam = {c:ray,fov:f64}
 
 

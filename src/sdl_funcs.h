@@ -1,4 +1,6 @@
 #include "common.h"
+#include "constants.h"
+#include <SDL2/SDL_ttf.h>
 #ifndef __SDL_FUNC_H__
 #define __SDL_FUNC_H__
 SDL_Window* sdl_getwindow();

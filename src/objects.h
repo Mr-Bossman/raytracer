@@ -1,6 +1,5 @@
 
 #include "common.h"
-#include "geometry.h"
 #include "vector.h"
 #ifndef __OBJECTS_H__
 #define __OBJECTS_H__
@@ -35,6 +34,12 @@ struct Cam {
     vec3 dir;
     double fov;
 };
+
+struct Ray {
+    vec3 o;
+    vec3 d;
+};
+
 
 struct Lights{
     std::vector<Light> light;

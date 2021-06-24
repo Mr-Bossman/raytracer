@@ -1,6 +1,5 @@
 #include <iostream>
 #include "common.h"
-#include "geometry.h"
 #include "constants.h"
 #include "sdl_funcs.h"
 #include "objects.h"
@@ -134,22 +133,12 @@ void create_objects(Objects& objects ,Lights& lights){
 void renderFUTH(Cam c,Objects ob){
     frame32 framebuffer(SCREEN_HEIGHT,SCREEN_WIDTH);
     uint32_t *pix = new uint32_t[SCREEN_HEIGHT*SCREEN_WIDTH];
-    struct futhark_context_config *cfg = futhark_context_config_new();
-    struct futhark_context *ctx = futhark_context_new(cfg);
-    struct futhark_u32_2d *pixels;
-    Fstate *state;
-    Fvec3 *vec;
-    Fvec3 *veca;
-    Fray  *ray;
-    Fcam *cam;
-    Fsphere *sphere;
-    pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
-    futhark_entry_Vec(ctx, &vec,0,0,0);
-    futhark_entry_Sphere(ctx, &sphere,vec,1);
-    futhark_entry_Vec(ctx, &veca,c.pos.x,c.pos.y,c.pos.z);
-    futhark_entry_Vec(ctx, &vec,c.dir.x,c.dir.y,c.dir.z);
-    futhark_entry_Ray(ctx, &ray,veca,vec);
-    futhark_entry_Cam(ctx,&cam,ray,c.fov);
+    Fconfig cfg = futhark_context_config_new();
+    Fcontext ctx = futhark_context_new(cfg);
+    Fstate state;
+    Fu32_2 pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
+    Fsphere sphere = FsphereC(ctx,ob.sphere[1]);
+    Fcam cam = FcamC(ctx,c);
     futhark_entry_State(ctx, &state,sphere,cam,SCREEN_HEIGHT,SCREEN_WIDTH);
     futhark_entry_main(ctx,&pixels,SCREEN_HEIGHT,SCREEN_WIDTH,state);
     futhark_values_u32_2d(ctx,pixels,pix);
