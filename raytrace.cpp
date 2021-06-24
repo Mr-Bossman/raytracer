@@ -53,22 +53,20 @@ vec3 refract(const vec3 &I, const vec3 &N, const double eta_t, const double eta_
 }
 
 bool scene_intersect(const vec3 &orig, const vec3 &dir, const Objects &obj, vec3 &hit, vec3 &N, Material &material) {
-    double spheres_dist = std::numeric_limits<double>::max();
+    double dist = std::numeric_limits<double>::max();
     for (const Sphere &s : obj.sphere) {
         double dist_i;
-        if (ray_sphere_intersect(orig, dir, s, dist_i) && dist_i < spheres_dist) {
-            spheres_dist = dist_i;
+        if (ray_sphere_intersect(orig, dir, s, dist_i) && dist_i < dist) {
+            dist = dist_i;
             hit = orig + dir*dist_i;
             N = (hit - s.center).normalize();
             material = s.material;
         }
     }
-    double triangle_dist = std::numeric_limits<double>::max();
-
     for (const Triangle &t : obj.triangle) {
         double dist_i;
-        if (ray_triangle_intersect(orig, dir, t, dist_i) && dist_i < spheres_dist) {
-            triangle_dist = dist_i;
+        if (ray_triangle_intersect(orig, dir, t, dist_i) && dist_i < dist) {
+            dist = dist_i;
             hit = orig + dir*dist_i;
             material = t.material;
 
@@ -76,26 +74,23 @@ bool scene_intersect(const vec3 &orig, const vec3 &dir, const Objects &obj, vec3
             vec3 edge1 = t.b - t.a;
             vec3 edge2 = t.c - t.a;
             N = edge1.cross(edge2).normalize();
-            //if (N.dot(dir) > 0) N = -N;
             // ^^^ from mark
         }
     }
     //do other shapes
-
-    double checkerboard_dist = std::numeric_limits<double>::max();
     #if PLANE
     if (std::abs(dir.y)>EPSILON) { // avoid division by zero
         double d = -(orig.y+4)/dir.y; // the checkerboard plane has equation y = -4
         vec3 pt = orig + dir*d;
-        if (d>EPSILON&& fabs(pt.x)<80 && fabs(pt.z)<80 && d<spheres_dist && d < triangle_dist) {
-            checkerboard_dist = d;
+        if (d>EPSILON&& fabs(pt.x)<80 && fabs(pt.z)<80 && d < dist) {
+            dist = d;
             hit = pt;
             N = vec3{0,1,0};
             material.diffuse_color = (int(0.5*hit.x+RENDER_DIST) + int(0.5*hit.z+RENDER_DIST)) & 1 ? color{.3, .3, .3} : color{.3, .2, .1};
         }
     }
     #endif
-    return std::min(triangle_dist, std::min(spheres_dist, checkerboard_dist))<RENDER_DIST;
+    return dist <RENDER_DIST;
 }
 
 color cast_ray(const vec3 &orig, const vec3 &dir, const Objects &obj, const Lights &lights, size_t depth) {

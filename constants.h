@@ -1,7 +1,7 @@
 #ifndef __CONSTANTS_H__
 #define __CONSTANTS_H__
-const int SCREEN_WIDTH = 256*2;
-const int SCREEN_HEIGHT = 144*2;
+const int SCREEN_WIDTH = 256*1;
+const int SCREEN_HEIGHT = 144*1;
 const int WINDOW_WIDTH = 640*8;
 const int WINDOW_HEIGHT = 480*8;
 const double EPSILON = 0.0001;
