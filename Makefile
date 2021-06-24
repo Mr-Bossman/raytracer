@@ -54,3 +54,4 @@ run: all
 .PHONY: clean
 
 clean:
+	rm -f bin/*  *~ $(TARGET) 

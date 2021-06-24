@@ -1,7 +1,7 @@
 #ifndef __CONSTANTS_H__
 #define __CONSTANTS_H__
-const int SCREEN_WIDTH = 256*10;
-const int SCREEN_HEIGHT = 144*10;
+const int SCREEN_WIDTH = 256*12;
+const int SCREEN_HEIGHT = 144*12;
 const int WINDOW_WIDTH = 640*8;
 const int WINDOW_HEIGHT = 480*8;
 const double EPSILON = 0.0001;
@@ -12,4 +12,4 @@ const double EPSILON = 0.0001;
 #define RENDER_DIST 1000
 #define REC_DEPTH 3
 #define PLANE true
-#endif // __CONSTANTS_H__
+#endif // __CONSTANTS_H_

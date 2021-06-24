@@ -7,6 +7,7 @@
 #include "raytrace.h"
 #include "vector.h"
 #include "stl.h"
+#include "futhark.h"
 #include "../bin/ray.h"
 
 std::atomic<bool> end (false);
@@ -136,14 +137,21 @@ void renderFUTH(Cam c,Objects ob){
     struct futhark_context_config *cfg = futhark_context_config_new();
     struct futhark_context *ctx = futhark_context_new(cfg);
     struct futhark_u32_2d *pixels;
-    struct futhark_opaque_state *state;
-    struct futhark_opaque_vec3 *vec;
-    struct futhark_opaque_sphere *sphere;
+    Fstate *state;
+    Fvec3 *vec;
+    Fvec3 *veca;
+    Fray  *ray;
+    Fcam *cam;
+    Fsphere *sphere;
     pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
-    futhark_entry_Vec(ctx, &vec,1,1,1);
+    futhark_entry_Vec(ctx, &vec,0,0,0);
     futhark_entry_Sphere(ctx, &sphere,vec,1);
-    futhark_entry_State(ctx, &state,sphere,SCREEN_HEIGHT,SCREEN_WIDTH);
-    futhark_entry_main(ctx,&pixels,SCREEN_WIDTH, SCREEN_HEIGHT, state);
+    futhark_entry_Vec(ctx, &veca,c.pos.x,c.pos.y,c.pos.z);
+    futhark_entry_Vec(ctx, &vec,c.dir.x,c.dir.y,c.dir.z);
+    futhark_entry_Ray(ctx, &ray,veca,vec);
+    futhark_entry_Cam(ctx,&cam,ray,c.fov);
+    futhark_entry_State(ctx, &state,sphere,cam,SCREEN_HEIGHT,SCREEN_WIDTH);
+    futhark_entry_main(ctx,&pixels,SCREEN_HEIGHT,SCREEN_WIDTH,state);
     futhark_values_u32_2d(ctx,pixels,pix);
     futhark_context_sync(ctx);
     futhark_context_free(ctx);
@@ -208,19 +216,19 @@ int main(int argc, char*argv[]) {
                 xM += event.motion.xrel*MOUSE_SENSITIVITY;
                 yM += event.motion.yrel*MOUSE_SENSITIVITY;
                 SDL_GetWindowSize(sdl_getwindow(), &winsizeX,&winsizeY);
-                cam.dir = vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1,0};
+                cam.dir = vec3{-(yM*M_PI/winsizeY)*1.,-(xM*M_PI/winsizeX)*1,0};
             }
         }
         if(keystates[SDL_SCANCODE_ESCAPE])
             signal_hand(0);
         if(keystates[SDL_SCANCODE_W])
-            cam.pos -= rotate(vec3{0,0,MOVEMENT_SPEED},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
+            cam.pos -= rotate(vec3{0,0,MOVEMENT_SPEED},vec3{-(yM*M_PI/winsizeY)*1.,-(xM*M_PI/winsizeX)*1.,0});
         if(keystates[SDL_SCANCODE_S])
-            cam.pos += rotate(vec3{0,0,MOVEMENT_SPEED},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
+            cam.pos += rotate(vec3{0,0,MOVEMENT_SPEED},vec3{-(yM*M_PI/winsizeY)*1.,-(xM*M_PI/winsizeX)*1.,0});
         if(keystates[SDL_SCANCODE_A])
-            cam.pos -= rotate(vec3{MOVEMENT_SPEED,0,0},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
+            cam.pos -= rotate(vec3{MOVEMENT_SPEED,0,0},vec3{-(yM*M_PI/winsizeY)*1.,-(xM*M_PI/winsizeX)*1.,0});
         if(keystates[SDL_SCANCODE_D])
-            cam.pos += rotate(vec3{MOVEMENT_SPEED,0,0},vec3{-(yM*M_PI/winsizeX)*1.,-(xM*M_PI/winsizeY)*1.,0});
+            cam.pos += rotate(vec3{MOVEMENT_SPEED,0,0},vec3{-(yM*M_PI/winsizeY)*1.,-(xM*M_PI/winsizeX)*1.,0});
         if(keystates[SDL_SCANCODE_SPACE])
             cam.pos.y += MOVEMENT_SPEED;
         if(keystates[SDL_SCANCODE_LSHIFT])
