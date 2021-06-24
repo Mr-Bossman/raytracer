@@ -13,6 +13,7 @@ std::atomic<bool> end (false);
 SDL_Event event;
 void signal_hand(int signum) {
    std::cout << "Caught signal " << signum << std::endl;
+   usleep(500000);
    sdl_pixels_unlock();
    sdl_close(0);
    exit(0);
@@ -164,7 +165,7 @@ void esc(){
             end = true;
             return;
         }
-        sleep(0.2);
+        usleep(200000);
     }
 }
 int main(int argc, char*argv[]) {
@@ -225,8 +226,8 @@ int main(int argc, char*argv[]) {
             cam.pos.y += MOVEMENT_SPEED;
         if(keystates[SDL_SCANCODE_LSHIFT])
             cam.pos.y -= MOVEMENT_SPEED;
-        //render(objects, lights,cam);
-        renderFUTH(cam,objects);
+        render(objects, lights,cam);
+        //renderFUTH(cam,objects);
         if(end)signal_hand(0);
         //SDL_Log("{%lf,%lf,%lf},{%lf,%lf,%lf}",cam.pos.x,cam.pos.y,cam.pos.z,cam.dir.x,cam.dir.y,cam.dir.z);
         sdl_frame();
