@@ -70,8 +70,14 @@ bool scene_intersect(const vec3 &orig, const vec3 &dir, const Objects &obj, vec3
         if (ray_triangle_intersect(orig, dir, t, dist_i) && dist_i < spheres_dist) {
             triangle_dist = dist_i;
             hit = orig + dir*dist_i;
-            N = vec3{0,1,0};
             material = t.material;
+
+            // vvv from mark
+            vec3 edge1 = t.b - t.a;
+            vec3 edge2 = t.c - t.a;
+            N = edge1.cross(edge2).normalize();
+            //if (N.dot(dir) > 0) N = -N;
+            // ^^^ from mark
         }
     }
     //do other shapes

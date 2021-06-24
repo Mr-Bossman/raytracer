@@ -7,7 +7,15 @@
 #include "raytrace.h"
 #include "vector.h"
 #include "stl.h"
+
+std::atomic<bool> end (false);
 SDL_Event event;
+void signal_hand(int signum) {
+   std::cout << "Caught signal " << signum << std::endl;
+   sdl_pixels_unlock();
+   sdl_close(0);
+   exit(0);
+}
 rgb colorC(const color c) {
     rgb colors;
     char * arr = (char*)&colors;
@@ -48,20 +56,22 @@ void render(const Objects &spheres, const Lights &lights,const Cam &cam) {
     #pragma omp parallel for
     for (size_t j = 0; j<SCREEN_HEIGHT; j++) { // actual rendering loop
         for (size_t i = 0; i<SCREEN_WIDTH; i++) {
+            if(end)continue;
             double dir_x =  (i + 0.5) -  SCREEN_WIDTH/2.;
             double dir_y = -(j + 0.5) + SCREEN_HEIGHT/2.;    // this flips the image at the same time
             double dir_z = -SCREEN_HEIGHT/(2.*tan(fov/2.));
             framebuffer[j][i] = colorC(cast_ray(cam.pos, rotate(vec3{dir_x, dir_y, dir_z},cam.dir).normalize(), spheres, lights));
-            
             #if ANTIALIAS 
             frame1[j][i] = framebuffer[j][i];
             #endif
         }
     }
+
     #if ANTIALIAS 
     #pragma omp parallel for
     for (size_t j = 0; j<SCREEN_HEIGHT; j++) { // actual rendering loop
         for (size_t i = 0; i<SCREEN_WIDTH; i++) {
+            if(end) continue;
             double dir_x =  (i + 0.5) -  SCREEN_WIDTH/2.;
             double dir_y = -(j + 0.5) + SCREEN_HEIGHT/2.;    // this flips the image at the same time
             double dir_z = -SCREEN_HEIGHT/(2.*tan(fov/2.));
@@ -93,13 +103,6 @@ void render(const Objects &spheres, const Lights &lights,const Cam &cam) {
     #endif
 }
 
-
-void signal_hand(int signum) {
-   std::cout << "Caught signal " << signum << std::endl;
-   #pragma omp flush // fix seg fault from open mp accesing sdl doesnt work though
-   sdl_pixels_unlock();
-   sdl_close(0);
-}
 void create_objects(Objects& objects ,Lights& lights){
     const Material      ivory = {1.0, {0.6,  0.3, 0.1, 0.0}, {0.4, 0.4, 0.3},   50.};
     const Material      glass = {1.5, {0.0,  0.5, 0.1, 0.8}, {0.6, 0.7, 0.8},  125.};
@@ -108,32 +111,44 @@ void create_objects(Objects& objects ,Lights& lights){
     const Material       wood = {1.0, {1.2,  0.1, 0.0, 0.0}, {0.2, 0.1, 0.02},    1.};
 
     objects ={{
-        /*Sphere{vec3{-3,    0,   -16}, 2,      ivory},
+        Sphere{vec3{-3,    0,   -16}, 2,      ivory},
         Sphere{vec3{-1.0, -1.5, -12}, 2,      glass},
         Sphere{vec3{ 1.5, -0.5, -18}, 3, red_rubber},
         Sphere{vec3{ 7,    5,   -18}, 4,     mirror},
-        Sphere{vec3{-3,    10,   -17}, 2,      wood}*/
+        Sphere{vec3{-3,    10,   -17}, 2,      wood}
     },{
         //Triangle{vec3{-3,    0,   -16},vec3{-3,    10,   -17},vec3{ 7,    5,   -18},red_rubber}
     }
     };
 
     lights = {{
-        {{-20, 20,  20}, {1.5,1,1}},
-        {{ 30, 50, -25}, {1,1.8,1}},
-        {{ 30, 20,  30}, {1,1,1.7}}
+        {{-2, 20,  40}, {1,1,1}},
+        {{ -2, 50,50}, {1,1,1}},
+        {{ -2, 20,  60}, {1,1,1}}
     }
     };
 
 }
-
+void esc(){
+    while(1){
+        SDL_PumpEvents();
+        const Uint8 *keystates = SDL_GetKeyboardState(NULL);
+        if(keystates[SDL_SCANCODE_ESCAPE]){
+            end = true;
+            return;
+        }
+        sleep(0.2);
+    }
+}
 int main(int argc, char*argv[]) {
     signal(SIGINT, signal_hand);
+    std::thread th(esc);
 	if( !sdl_init() )
 	{
 		printf( "Failed to initialize!\n" );
         exit(-1);
 	}
+    sdl_pixels_unlock();
 
     Cam cam = {
         {-1.8,12.2,16.8},
@@ -184,6 +199,7 @@ int main(int argc, char*argv[]) {
         if(keystates[SDL_SCANCODE_LSHIFT])
             cam.pos.y -= MOVEMENT_SPEED;
         render(objects, lights,cam);
+        if(end)signal_hand(0);
         //SDL_Log("{%lf,%lf,%lf},{%lf,%lf,%lf}",cam.pos.x,cam.pos.y,cam.pos.z,cam.dir.x,cam.dir.y,cam.dir.z);
         sdl_frame();
     }

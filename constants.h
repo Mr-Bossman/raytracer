@@ -10,6 +10,6 @@ const double EPSILON = 0.0001;
 #define MOUSE_SENSITIVITY 2.5
 #define MOVEMENT_SPEED 1.5
 #define RENDER_DIST 1000
-#define REC_DEPTH 2
+#define REC_DEPTH 3
 #define PLANE true
 #endif // __CONSTANTS_H__

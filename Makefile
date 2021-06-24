@@ -8,7 +8,9 @@ TARGET = tracer
 SRCS= $(shell find . -name "*.cpp")
 OBJ=$(subst .cpp,.o,$(SRCS))
 
-all: clean $(TARGET)
+all:
+	$(MAKE) clean
+	$(MAKE) $(TARGET)
 
 $(TARGET): $(OBJ)
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
