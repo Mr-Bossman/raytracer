@@ -138,11 +138,12 @@ void renderFUTH(Cam c,Objects ob){
     Fcontext ctx = futhark_context_new(cfg);
     Fstate state;
     Fu32_2 pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
-    Fsphere sphere = FsphereC(ctx,ob.sphere[1]);
+    FsphereArr sphere = FsphereArrC(ctx,ob.sphere);
     Fcam cam = FcamC(ctx,c);
     futhark_entry_State(ctx, &state,sphere,cam,SCREEN_HEIGHT,SCREEN_WIDTH);
     futhark_entry_main(ctx,&pixels,SCREEN_HEIGHT,SCREEN_WIDTH,state);
     futhark_values_u32_2d(ctx,pixels,pix);
+    futhark_free_u32_2d(ctx,pixels);
     futhark_context_sync(ctx);
     futhark_context_free(ctx);
     futhark_context_config_free(cfg);
