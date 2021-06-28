@@ -3,6 +3,7 @@ import "types"
 
 entry Sphere (o: vec3) (r: f64) (mat:material): sphere = {o=o,r=r,mat=mat}
 entry Ray (o: vec3) (d: vec3): ray = {o=o,d=d}
+entry Light (o: vec3) (c: vec3): light = {o=o,c=c}
 entry Vec (xs: f64) (ys: f64)(zs: f64) : vec3 = {x=xs,y=ys,z=zs}
 entry Cam (c:ray)(fov: f64):cam = {c=c,fov=fov}
 entry Albedo (a:f64)(D:f64)(at:f64)(ap:f64):albedo = {a=a,D=D,at=at,ap=ap}
@@ -39,6 +40,8 @@ let ray_sphere_intersect (r:ray) (s:sphere):intersection sphere=
     in if (t0 < EPSILON) then 
     if (t1 < EPSILON) then #No else #Yes t0 s
     else #Yes t0 s
+
+
 let scene_intersect_check 'shape  (a: intersection shape) (b: intersection shape):intersection shape  = match a
   case #No -> b
   case #Yes dist_a _ -> match b
@@ -56,14 +59,44 @@ let scene_intersect_sphere [obj](s:[obj]sphere)(r:ray) =
 let scene_intersect [obj](s:state[obj])(r:ray) = 
 scene_intersect_sphere s.s r
 
-let reflect(I:vec3,N:vec3) = vec.(I - vec.scale 2 vec.(N*vec.(I*N)))
---vec3 refract(const vec3 &I, const vec3 &N, const double eta_t, const double eta_i) { // Snell's law
---    double cosi = - std::max(-1., std::min(1., (I*N).doub()));
---    if (cosi<0) return refract(I, -N, eta_i, eta_t); // if the ray comes from the inside the object, swap the air and the media
---    double eta = eta_i / eta_t;
---    double k = 1 - eta*eta*(1 - cosi*cosi);
---    return k<0 ? vec3{1,0,0} : I*eta + N*(eta*cosi - std::sqrt(k)); // k<0 = total reflection, no ray to refract. I refract it anyways, this has no physical meaning
---}
+let scene_intersect_flood_light (l:light)(p:vec3) = 
+    let d = vec.normalise(vec.(l.o - p)) 
+    in (d,l.c)
+
+ 
+let scene_intersect_light_sub [obj](s:state[obj])(p:vec3)(l:light) = 
+    let (dir,c)  = scene_intersect_flood_light l p 
+    let (hit,h,N,mat) = scene_intersect s {o=p,d=dir}
+    in if (false) then (vec.zero,vec.zero) else 
+        let a = vec.norm(vec.(h-p))
+        let b = vec.norm(vec.(l.o-p))
+        in if a < b then (vec.zero,vec.zero) else
+            let dt = f64.max 0 (vec.dot dir N)
+            let diffuse = vec.scale dt l.c
+            let spec = vec.scale 5 l.c
+            --let spec = (light.intensity * std::pow(std::max(0., (-reflect(-light_dir, N)*dir).doub()), material.specular_exponent));
+            in (diffuse,spec) 
+
+
+let vec_twotup_add (a:vec3,b:vec3)(c:vec3,d:vec3):(vec3,vec3) = (vec.(a+c),vec.(b+d))
+
+
+let scene_intersect_light [lights][obj](s:state[obj])(l:[lights]light)(p:vec3) =
+    reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p lp) l)
+
+
+let reflect(I:vec3)(N:vec3) = vec.(I - vec.scale 2 vec.(N*vec.(I*N)))
+
+
+let refract(I:vec3)(N:vec3)(t:f64)(i:f64):vec3 =
+    let cosi = vec.dot I N --need to constran to -1 and 1
+    --if(cosai < 0) then let cosi = vec.dot -I N
+    let eta = i/t
+    let k = 1 - ((eta*eta)*(1-(cosi*cosi)))
+    in if (k < 0) then {x=1,y=0,z=0} else 
+        let les = (eta*cosi) - (f64.sqrt(k))
+        in vec.((vec.scale eta I) + (vec.scale les N))
+
 let ray_cast [obj](s:state[obj]) (h) (w):u32 = 
     let x = ((f64.i64 w)+0.5)-((f64.u32 s.w)/2)
     let y = -((f64.i64 h)+0.5)+((f64.u32 s.h)/2)

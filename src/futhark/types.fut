@@ -4,6 +4,9 @@ import "lib/github.com/athas/vector/vspace"
 module vec = mk_vspace_3d f64
 type vec3 = vec.vector
 
+
+type light = {o:vec3,c:vec3}
+
 type ray = {o:vec3,d:vec3}
 type cam = {c:ray,fov:f64}
 type albedo = {a:f64,D:f64,at:f64,ap:f64}

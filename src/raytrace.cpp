@@ -88,7 +88,7 @@ bool scene_intersect(const vec3 &orig, const vec3 &dir, const Objects &obj, vec3
     #endif
     return dist <RENDER_DIST;
 }
-//:(hit:bool,hitP:vec3,Norm:vec3,mat:material)
+//
 color cast_ray(const vec3 &orig, const vec3 &dir, const Objects &obj, const Lights &lights, size_t depth) {
     vec3 point, N;
     Material material;
@@ -117,3 +117,11 @@ color cast_ray(const vec3 &orig, const vec3 &dir, const Objects &obj, const Ligh
     //do spot light
     return (material.diffuse_color * diffuse_light_intensity) * material.albedo[0] + (specular_light_intensity * material.albedo[1]) + reflect_color*material.albedo[2] + refract_color*material.albedo[3];
 }
+
+/*        let a = vec.norm(vec.(h-p))
+        let b = vec.norm(vec.(l.o-p))
+        in if a < b then (vec.zero,vec.zero) else
+            let diffuse = (light.c * (vec.dot dir N)) --std::max(0.,  vec.dot dir N);
+            --let spec = (light.intensity * std::pow(std::max(0., (-reflect(-light_dir, N)*dir).doub()), material.specular_exponent));
+            (diffuse,vec.zero)
+*/
