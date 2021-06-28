@@ -59,9 +59,7 @@ let scene_intersect_sphere [obj](s:[obj]sphere)(r:ray) =
 let scene_intersect [obj][la](s:state[obj][la])(r:ray) = 
 scene_intersect_sphere s.s r
 
-let scene_intersect_flood_light (l:light)(p:vec3) = 
-    let d = vec.normalise(vec.(l.o - p)) 
-    in (d,l.c)
+let scene_intersect_flood_light (l:light)(p:vec3) =  vec.normalise(vec.(l.o - p)) 
 
 let reflect(I:vec3)(N:vec3) = vec.(I - vec.scale 2 vec.(N*vec.(I*N)))
 
@@ -75,25 +73,24 @@ let refract(I:vec3)(N:vec3)(t:f64)(i:f64):vec3 =
         let les = (eta*cosi) - (f64.sqrt(k))
         in vec.((vec.scale eta I) + (vec.scale les N))
 
-let scene_intersect_light_sub [obj][la](s:state[obj][la])(p:vec3)(l:light)(mate:material) = 
-    let (dir,c)  = scene_intersect_flood_light l p 
-    let (hit,h,N,mat) = scene_intersect s {o=p,d=dir}
+let scene_intersect_light_sub [obj][la](s:state[obj][la])(p:vec3)(N:vec3)(l:light) = 
+    let dir  = scene_intersect_flood_light l p 
+    let (hit,h,_,mat) = scene_intersect s {o=p,d=dir}
     let a = vec.norm(vec.(h-p))
     let b = vec.norm(vec.(l.o-p))
     in if (hit && (a < b)) then (vec.zero,vec.zero) else 
         let dt = f64.max 0 (vec.dot dir N)
         let diffuse = vec.scale dt l.c
         let base = f64.max 0 (vec.dot (vec.scale (-1) (reflect (vec.scale (-1) dir) N)) dir)
-        let spec = vec.scale (base**mate.specular_exponent) l.c
-        --let spec = (light.intensity * std::pow(std::max(0., (-reflect(-light_dir, N)*dir).doub()), material.specular_exponent));
+        let spec = vec.scale (base**mat.specular_exponent) l.c
         in (diffuse,spec) 
 
 
 let vec_twotup_add (a:vec3,b:vec3)(c:vec3,d:vec3):(vec3,vec3) = (vec.(a+c),vec.(b+d))
 
 
-let scene_intersect_light [la][obj](s:state[obj][la])(p:vec3)(mat:material) =
-    reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p lp mat) s.l)
+let scene_intersect_light [la][obj](s:state[obj][la])(p:vec3)(N:vec3) =
+    reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p N lp) s.l)
 
 
 
@@ -105,12 +102,12 @@ let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 =
     let r:ray = {o=s.c.c.o,d=d}
     let (hit,h,N,mat) = scene_intersect s r 
     in if(hit) then 
-    let  (diffuse,spec)  = scene_intersect_light s h mat
-    let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color  * diffuse)
+    let  (diffuse,spec)  = scene_intersect_light s h N
+    let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
     let sp = vec.scale mat.albedo.D spec
     let refr = 0.1
     let refl = 0.1
-    in u32color vec.(diff + sp) --+ refl + refr
+    in u32color vec.(diff+sp) --+ refl + refr
     else u32color bgC
 
 entry main [obj][la](h:i64) (w:i64) (s:state[obj][la]):[h][w]u32 = 

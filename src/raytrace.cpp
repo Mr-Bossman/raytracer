@@ -1,8 +1,8 @@
 #include "raytrace.h"
 bool ray_sphere_intersect(const vec3 &orig, const vec3 &dir, const Sphere &s, double &t0) {
     vec3 L = s.center - orig;
-    double tca = (L*dir).doub();
-    double d2 =  (L*L).doub() - tca*tca;
+    double tca = L.dot(dir);
+    double d2 =  L.dot(L) - tca*tca;
     if (d2 > s.radius*s.radius) return false;
     double thc = sqrtf(s.radius*s.radius - d2);
     t0       = tca - thc;
@@ -41,7 +41,7 @@ vec3 reflect(const vec3 &I, const vec3 &N) {
 }
 
 vec3 refract(const vec3 &I, const vec3 &N, const double eta_t, const double eta_i) { // Snell's law
-    double cosi = - std::max(-1., std::min(1., (I*N).doub()));
+    double cosi = - std::max(-1., std::min(1., I.dot(N)));
     if (cosi<0) return refract(I, -N, eta_i, eta_t); // if the ray comes from the inside the object, swap the air and the media
     double eta = eta_i / eta_t;
     double k = 1 - eta*eta*(1 - cosi*cosi);
@@ -111,8 +111,8 @@ color cast_ray(const vec3 &orig, const vec3 &dir, const Objects &obj, const Ligh
                 (shadow_pt-point).norm() < (light.position-point).norm()) // checking if the point lies in the shadow of the light
             continue;
 
-        diffuse_light_intensity = diffuse_light_intensity  + (light.intensity * std::max(0.,  (light_dir*N).doub()));
-        specular_light_intensity = specular_light_intensity + (light.intensity * std::pow(std::max(0., (-reflect(-light_dir, N)*dir).doub()), material.specular_exponent));
+        diffuse_light_intensity += (light.intensity * std::max(0.,  N.dot(light_dir)));
+        specular_light_intensity += (light.intensity * std::pow(std::max(0., dir.dot(-reflect(-light_dir, N))), material.specular_exponent));
     }
     //do spot light
     return (material.diffuse_color * diffuse_light_intensity) * material.albedo[0] + (specular_light_intensity * material.albedo[1]) + reflect_color*material.albedo[2] + refract_color*material.albedo[3];
