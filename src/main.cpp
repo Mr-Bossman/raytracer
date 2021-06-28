@@ -113,6 +113,11 @@ void create_objects(Objects& objects ,Lights& lights){
     const Material       wood = {1.0, {1.2,  0.1, 0.0, 0.0}, {0.2, 0.1, 0.02},    1.};
 
     objects ={{
+        Sphere{vec3{-3,    0,   -16}, 2,      ivory},
+        Sphere{vec3{-1.0, -1.5, -12}, 2,      glass},
+        Sphere{vec3{ 1.5, -0.5, -18}, 3, red_rubber},
+        Sphere{vec3{ 7,    5,   -18}, 4,     mirror},
+        Sphere{vec3{-3,    10,   -17}, 2,      wood}
     },{
         //Triangle{vec3{-3,    0,   -16},vec3{-3,    10,   -17},vec3{ 7,    5,   -18},red_rubber}
     }

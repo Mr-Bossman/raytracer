@@ -26,38 +26,44 @@ let u32color (c:vec3):u32 =
     let b = u32.f64 (c.z * 255)
     in (b + (g*256) + (r*65536))
 
+type intersection 'shape =  #Yes f64 shape | #No
 
-let ray_sphere_intersect (r:ray) (s:sphere) =
+let ray_sphere_intersect (r:ray) (s:sphere):intersection sphere=
     let L = vec.(s.o - r.o)
     let tca = vec.dot r.d L
     let d2 =  (vec.quadrance L) - (tca*tca)
-    in if (d2 > s.r*s.r) then (0:f64,false,s) else
+    in if (d2 > s.r*s.r) then #No else
     let thc = f64.sqrt((s.r*s.r) - d2)
     let t0 = tca - thc
     let t1 = tca + thc
     in if (t0 < EPSILON) then 
-    if (t1 < EPSILON) then (0,false,s) else (t1,true,s)
-    else (t0,true,s)
-let scene_intersect_sphere_check (t0a:f64,hita:bool,sa:sphere) (t0b:f64,hitb:bool,sb:sphere) = 
-    if(hita) then 
-        if (hitb) then
-            if(t0b < t0a) then 
-                (t0b,hitb,sb)
-            else (t0a,hita,sa)
-        else (t0a,hita,sa)
-    else (t0b,hitb,sb)
+    if (t1 < EPSILON) then #No else #Yes t0 s
+    else #Yes t0 s
+let scene_intersect_check 'shape  (a: intersection shape) (b: intersection shape):intersection shape  = match a
+  case #No -> b
+  case #Yes dist_a _ -> match b
+    case #No -> a
+    case #Yes dist_b _ -> if dist_a < dist_b then a else b
+
 let scene_intersect_sphere [obj](s:[obj]sphere)(r:ray) = 
-    let (t0,hit,sp) = reduce(scene_intersect_sphere_check) (0,false,s[0]) (map(\sf -> ray_sphere_intersect r sf) s)
-    in if hit then
-        let h = vec.(r.o + vec.scale t0 r.d)
-        let N = vec.normalise(vec.(h - sp.o))
-        in (hit,h,N,sp.mat)
-    else (hit,{x=0,y=0,z=0},{x=0,y=0,z=0},sp.mat)
+    let closest = reduce(scene_intersect_check) #No (map(\sf -> ray_sphere_intersect r sf) s)
+    in match closest
+        case #No -> (false,vec.zero,vec.zero,s[0].mat)
+        case #Yes t0 sp -> let h = vec.(r.o + vec.scale t0 r.d)
+            let N = vec.normalise(vec.(h - sp.o))
+            in (true,h,N,sp.mat)
 
 let scene_intersect [obj](s:state[obj])(r:ray) = 
 scene_intersect_sphere s.s r
 
-
+let reflect(I:vec3,N:vec3) = vec.(I - vec.scale 2 vec.(N*vec.(I*N)))
+--vec3 refract(const vec3 &I, const vec3 &N, const double eta_t, const double eta_i) { // Snell's law
+--    double cosi = - std::max(-1., std::min(1., (I*N).doub()));
+--    if (cosi<0) return refract(I, -N, eta_i, eta_t); // if the ray comes from the inside the object, swap the air and the media
+--    double eta = eta_i / eta_t;
+--    double k = 1 - eta*eta*(1 - cosi*cosi);
+--    return k<0 ? vec3{1,0,0} : I*eta + N*(eta*cosi - std::sqrt(k)); // k<0 = total reflection, no ray to refract. I refract it anyways, this has no physical meaning
+--}
 let ray_cast [obj](s:state[obj]) (h) (w):u32 = 
     let x = ((f64.i64 w)+0.5)-((f64.u32 s.w)/2)
     let y = -((f64.i64 h)+0.5)+((f64.u32 s.h)/2)
