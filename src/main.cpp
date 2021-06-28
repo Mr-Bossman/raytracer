@@ -227,7 +227,7 @@ int main(int argc, char*argv[]) {
                 xM += event.motion.xrel*MOUSE_SENSITIVITY;
                 yM += event.motion.yrel*MOUSE_SENSITIVITY;
                 SDL_GetWindowSize(sdl_getwindow(), &winsizeX,&winsizeY);
-                cam.dir = vec3{-(yM*M_PI/winsizeY)*1.,-(xM*M_PI/winsizeX)*1,0};
+                cam.dir = vec3{(yM*M_PI/winsizeY)*1.,(xM*M_PI/winsizeX)*1,0};
             }
         }
         if(keystates[SDL_SCANCODE_ESCAPE])

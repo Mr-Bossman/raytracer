@@ -20,7 +20,7 @@ type state[cn][la] = {l:[la]light,s:[cn]sphere,c:cam,h:u32,w:u32}
 entry State [obj][la](l:[la]light)(s: [obj]sphere)(c:cam)(h: u32)(w: u32): state[obj][la] = {l=l,s=s,c=c,h=h,w=w}
 
 
-let EPSILON:f64 = 0.0001
+let EPSILON:f64 = 0.001
 let bgC:vec3 = {x=0.2,y=0.7,z=0.8}
 
 let u32color (c:vec3):u32 =
@@ -115,6 +115,16 @@ let scene_intersect_light [la][obj](s:state[obj][la])(p:vec3)(N:vec3) =
     reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p N lp) s.l)
 
 
+let cast_ray_once [obj][la](s:state[obj][la])(r:ray):(vec3,vec3,vec3) = 
+    let (hit,h,N,mat) = scene_intersect s r 
+    in if(hit) then 
+        let  (diffuse,spec)  = scene_intersect_light s h N
+        let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
+        let sp = vec.scale mat.albedo.D spec
+        let refr = vec.normalise(refract r.d N mat.refractive_index 1)
+        let refl = vec.normalise(reflect r.d N)
+        in (vec.(diff+sp),refl,refr)
+    else (bgC,vec.zero,vec.zero)
 
 let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 = 
     let x = ((f64.i64 w)+0.5)-((f64.u32 s.w)/2)
@@ -122,16 +132,9 @@ let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 =
     let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
     let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
     let r:ray = {o=s.c.c.o,d=d}
-    let (hit,h,N,mat) = scene_intersect s r 
-    in if(hit) then 
-    let  (diffuse,spec)  = scene_intersect_light s h N
-    let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
-    let sp = vec.scale mat.albedo.D spec
-    let refr = vec.normalise(refract d N mat.refractive_index 1)
-    let refl = vec.normalise(reflect d N)
-    --need recursion
-    in u32color vec.(diff+sp)
-    else u32color bgC
+    let (c,fl,fr) = cast_ray_once s r
+    in u32color c
+
 
 entry main [obj][la](h:i64) (w:i64) (s:state[obj][la]):[h][w]u32 = 
 let s:state[obj][la] = s with h = u32.i64 h with w = u32.i64 w 
