@@ -38,9 +38,16 @@ let ray_sphere_intersect (r:ray) (s:sphere) =
     in if (t0 < EPSILON) then 
     if (t1 < EPSILON) then (0,false,s) else (t1,true,s)
     else (t0,true,s)
-
+let scene_intersect_sphere_check (t0a:f64,hita:bool,sa:sphere) (t0b:f64,hitb:bool,sb:sphere) = 
+    if(hita) then 
+        if (hitb) then
+            if(t0b < t0a) then 
+                (t0b,hitb,sb)
+            else (t0a,hita,sa)
+        else (t0a,hita,sa)
+    else (t0b,hitb,sb)
 let scene_intersect_sphere [obj](s:[obj]sphere)(r:ray) = 
-    let (t0,hit,sp) = (filter(\(_,hit,_) -> hit) (map(\sf -> ray_sphere_intersect r sf) s))[0]
+    let (t0,hit,sp) = reduce(scene_intersect_sphere_check) (0,false,s[0]) (map(\sf -> ray_sphere_intersect r sf) s)
     in if hit then
         let h = vec.(r.o + vec.scale t0 r.d)
         let N = vec.normalise(vec.(h - sp.o))

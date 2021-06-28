@@ -39,11 +39,11 @@ $(FUT_INTERM): $(FUT_SRC)
 $(FUT_OBJ):$(FUT_INTERM)
 	$(FUT_CC) $(FUT_CC_FLAGS) -c -o $@ $(FUT_INTERM)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) -include $(FUT_HEADER) -c -o $@ $^ $(CCFLAGS) 
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(FUT_INTERM)
+	$(CC) -include $(FUT_HEADER) -c -o $@ $< $(CCFLAGS) 
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) -include $(FUT_HEADER) -c -o $@ $^ $(CXXFLAGS) 
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(FUT_INTERM)
+	$(CXX) -include $(FUT_HEADER) -c -o $@ $< $(CXXFLAGS) 
 	
 tracer: $(FUT_OBJ) $(CC_OBJ) $(CXX_OBJ)
 	$(CXX) -o $@ $^ $(LIBS) $(CXXFLAGS) 
