@@ -24,9 +24,11 @@ let EPSILON:f64 = 0.001
 let bgC:vec3 = {x=0.2,y=0.7,z=0.8}
 
 let u32color (c:vec3):u32 =
-    let r = u32.f64 (c.x * 255)
-    let g = u32.f64 (c.y * 255)
-    let b = u32.f64 (c.z * 255)
+    let m = f64.max c.x (f64.max c.y c.z)
+    let nc  = if m > 1 then vec.scale (1/m) c else c
+    let r = u32.f64 (nc.x * 255)
+    let g = u32.f64 (nc.y * 255)
+    let b = u32.f64 (nc.z * 255)
     in (r + (g*256) + (b*65536))
 
 type intersection 'shape =  #Yes f64 shape | #No
@@ -115,7 +117,7 @@ let scene_intersect_light [la][obj](s:state[obj][la])(p:vec3)(N:vec3) =
     reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p N lp) s.l)
 
 
-let cast_ray_once [obj][la](s:state[obj][la])(r:ray):(vec3,vec3,vec3) = 
+let cast_ray_once [obj][la](s:state[obj][la])(r:ray):(vec3,vec3,vec3,vec3) = 
     let (hit,h,N,mat) = scene_intersect s r 
     in if(hit) then 
         let  (diffuse,spec)  = scene_intersect_light s h N
@@ -123,8 +125,10 @@ let cast_ray_once [obj][la](s:state[obj][la])(r:ray):(vec3,vec3,vec3) =
         let sp = vec.scale mat.albedo.D spec
         let refr = vec.normalise(refract r.d N mat.refractive_index 1)
         let refl = vec.normalise(reflect r.d N)
-        in (vec.(diff+sp),refl,refr)
-    else (bgC,vec.zero,vec.zero)
+        in (vec.(diff+sp),h,refl,refr)
+    else (bgC,vec.zero,vec.zero,vec.zero)
+
+
 
 let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 = 
     let x = ((f64.i64 w)+0.5)-((f64.u32 s.w)/2)
@@ -132,7 +136,12 @@ let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 =
     let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
     let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
     let r:ray = {o=s.c.c.o,d=d}
-    let (c,fl,fr) = cast_ray_once s r
+
+    let (sc,sh,sfl,sfr) = cast_ray_once s r
+    let (c,(_,_,_,_)) = 
+    loop (c ,(_,ha,fla,_)) = (sc,(sc,sh,sfl,sfr) ) for i < 4 do
+        (let (cp,h,fl,fr)  = cast_ray_once s {o=ha,d=fla} in (vec.(cp + c),(cp,h,fl,fr)))
+    
     in u32color c
 
 
