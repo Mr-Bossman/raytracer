@@ -21,6 +21,7 @@ class frame32{
     size_t height;
     size_t width;
     uint32_t *framebuffer;
+    frame32(){}
     frame32(size_t height_, size_t width_){
         framebuffer = (uint32_t*)sdl_pixels_lock();
         height = height_;

@@ -8,10 +8,29 @@
 #include "stl.h"
 #include "futhark.h"
 #include "../bin/ray.h"
+//oh god
+    uint32_t *pix;
+    Fconfig cfg;
+    Fcontext ctx;
+    Fstate state;
+    Fu32_2 pixels;
+    FsphereArr sphere;
+    FlightArr light;
+//end
 
 std::atomic<bool> end (false);
 SDL_Event event;
 void signal_hand(int signum) {
+    //oh god
+    futhark_free_opaque_arr_light_1d(ctx,light);
+    futhark_free_opaque_arr_sphere_1d(ctx,sphere);
+    futhark_free_u32_2d(ctx,pixels);
+    futhark_context_sync(ctx);
+    futhark_context_free(ctx);
+    futhark_context_config_free(cfg);
+    
+    delete[] pix;
+    //end
    std::cout << "Caught signal " << signum << std::endl;
    usleep(500000);
    sdl_pixels_unlock();
@@ -133,28 +152,18 @@ void create_objects(Objects& objects ,Lights& lights){
 }
 void renderFUTH(Cam c,const Objects &ob,const Lights &l){
     frame32 framebuffer(SCREEN_HEIGHT,SCREEN_WIDTH);
-    uint32_t *pix = new uint32_t[SCREEN_HEIGHT*SCREEN_WIDTH];
-    Fconfig cfg = futhark_context_config_new();
-    Fcontext ctx = futhark_context_new(cfg);
-    Fstate state;
-    Fu32_2 pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
-    FsphereArr sphere = FsphereArrC(ctx,ob.sphere);
-    FlightArr light = FlightArrC(ctx,l.light);
     Fcam cam = FcamC(ctx,c);
     futhark_entry_State(ctx, &state,light,sphere,cam,SCREEN_HEIGHT,SCREEN_WIDTH);
     futhark_entry_main(ctx,&pixels,SCREEN_HEIGHT,SCREEN_WIDTH,state);
     futhark_values_u32_2d(ctx,pixels,pix);
-    futhark_free_u32_2d(ctx,pixels);
-    futhark_context_sync(ctx);
-    futhark_context_free(ctx);
-    futhark_context_config_free(cfg);
+    futhark_free_opaque_cam(ctx,cam);
+    futhark_free_opaque_state(ctx,state);
     #pragma omp parallel for
     for (size_t j = 0; j<SCREEN_HEIGHT; j++) { // actual rendering loop
         for (size_t i = 0; i<SCREEN_WIDTH; i++) {
             framebuffer[j][i] = pix[(j*SCREEN_WIDTH) + i];
         }
     }
-    delete[] pix;
 }
 void esc(){
     while(1){
@@ -170,6 +179,7 @@ void esc(){
 int main(int argc, char*argv[]) {
     signal(SIGINT, signal_hand);
     std::thread th(esc);
+
 	if( !sdl_init() )
 	{
 		printf( "Failed to initialize!\n" );
@@ -186,6 +196,7 @@ int main(int argc, char*argv[]) {
     if(argc == 2)
         triangles = parsestl(std::string(argv[1]));
     int winsizeX, winsizeY;
+    SDL_GetWindowSize(sdl_getwindow(), &winsizeX,&winsizeY);
     Objects objects;
     Lights lights;
     create_objects(objects,lights);
@@ -195,6 +206,14 @@ int main(int argc, char*argv[]) {
     for(STL_Triangle t: triangles){
         objects.triangle.push_back(Triangle{vec3{t.a[0],t.a[2],t.a[1]},vec3{t.c[0],t.c[2],t.c[1]},vec3{t.b[0],t.b[2],t.b[1]},default_mat});
     }
+        //oh god
+    pix = new uint32_t[SCREEN_HEIGHT*SCREEN_WIDTH];
+    cfg = futhark_context_config_new();
+    ctx = futhark_context_new(cfg);
+    pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
+    sphere = FsphereArrC(ctx,objects.sphere);
+    light = FlightArrC(ctx,lights.light);
+    // end
     while(1){
 
         SDL_PumpEvents();
