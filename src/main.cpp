@@ -131,7 +131,7 @@ void create_objects(Objects& objects ,Lights& lights){
     };
 
 }
-void renderFUTH(Cam c,Objects ob){
+void renderFUTH(Cam c,const Objects &ob,const Lights &l){
     frame32 framebuffer(SCREEN_HEIGHT,SCREEN_WIDTH);
     uint32_t *pix = new uint32_t[SCREEN_HEIGHT*SCREEN_WIDTH];
     Fconfig cfg = futhark_context_config_new();
@@ -139,8 +139,9 @@ void renderFUTH(Cam c,Objects ob){
     Fstate state;
     Fu32_2 pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
     FsphereArr sphere = FsphereArrC(ctx,ob.sphere);
+    FlightArr light = FlightArrC(ctx,l.light);
     Fcam cam = FcamC(ctx,c);
-    futhark_entry_State(ctx, &state,sphere,cam,SCREEN_HEIGHT,SCREEN_WIDTH);
+    futhark_entry_State(ctx, &state,light,sphere,cam,SCREEN_HEIGHT,SCREEN_WIDTH);
     futhark_entry_main(ctx,&pixels,SCREEN_HEIGHT,SCREEN_WIDTH,state);
     futhark_values_u32_2d(ctx,pixels,pix);
     futhark_free_u32_2d(ctx,pixels);
@@ -225,7 +226,7 @@ int main(int argc, char*argv[]) {
         if(keystates[SDL_SCANCODE_LSHIFT])
             cam.pos.y -= MOVEMENT_SPEED;
         //render(objects, lights,cam);
-        renderFUTH(cam,objects);
+        renderFUTH(cam,objects,lights);
         if(end)signal_hand(0);
         //SDL_Log("{%lf,%lf,%lf},{%lf,%lf,%lf}",cam.pos.x,cam.pos.y,cam.pos.z,cam.dir.x,cam.dir.y,cam.dir.z);
         sdl_frame();

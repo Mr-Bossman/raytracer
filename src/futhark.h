@@ -15,6 +15,7 @@ typedef struct futhark_context* Fcontext;
 typedef struct futhark_context_config* Fconfig;
 typedef struct futhark_context_config* Fconfig;
 typedef struct futhark_opaque_arr_sphere_1d* FsphereArr;
+typedef struct futhark_opaque_arr_light_1d* FlightArr;
 typedef struct futhark_u32_2d* Fu32_2;
 typedef struct futhark_f64_1d* FdoubleA;
 Fvec3 Fvec3C(Fcontext ctx, vec3 pos);
@@ -25,4 +26,5 @@ Falbedo FalbedoC(Fcontext ctx, vec4 al);
 Fvec3 FcolorV3C(Fcontext ctx, color C);
 Fmaterial FmaterialC(Fcontext ctx, Material al);
 FsphereArr FsphereArrC(Fcontext ctx, std::vector<Sphere> s);
+FlightArr FlightArrC(Fcontext ctx, std::vector<Light> l);
 #endif

@@ -64,6 +64,9 @@
         "typeinfo": "cpp",
         "__nullptr": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "__hash_table": "cpp",
+        "__split_buffer": "cpp",
+        "__node_handle": "cpp"
     }
 }

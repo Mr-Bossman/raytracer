@@ -13,19 +13,19 @@ entry VecA [cn](xs: [cn]f64) (ys: [cn]f64)(zs: [cn]f64) : [cn]vec3 = map3(\x y z
 entry AlbedoA [cn] (a:[cn]f64)(D:[cn]f64)(at:[cn]f64)(ap:[cn]f64) : [cn]albedo = map4(\a D at ap-> {a=a,D=D,at=at,ap=ap}) a D at ap
 entry MaterialA [cn](refractive_index:[cn]f64)(albedo:[cn]albedo)(diffuse_color:[cn]vec3)(specular_exponent:[cn]f64):[cn]material = map4(\refractive_index albedo diffuse_color specular_exponent -> {refractive_index=refractive_index,albedo=albedo,diffuse_color=diffuse_color,specular_exponent=specular_exponent}) refractive_index albedo diffuse_color specular_exponent
 entry SphereA [cn](o: [cn]vec3) (r: [cn]f64) (mat:[cn]material) : [cn]sphere = map3(\o r mat -> {o=o,r=r,mat=mat}) o r mat
-
-type state[cn] = {s:[cn]sphere,c:cam,h:u32,w:u32}
-entry State [obj](s: [obj]sphere)(c:cam)(h: u32)(w: u32): state[obj] = {s=s,c=c,h=h,w=w}
+entry LightA [cn](o: [cn]vec3) (c: [cn]vec3): [cn]light = map2(\o c -> {o=o,c=c}) o c
+type state[cn][la] = {l:[la]light,s:[cn]sphere,c:cam,h:u32,w:u32}
+entry State [obj][la](l:[la]light)(s: [obj]sphere)(c:cam)(h: u32)(w: u32): state[obj][la] = {l=l,s=s,c=c,h=h,w=w}
 
 
 let EPSILON:f64 = 0.0001
-let bgC:vec3 = {x=0.01,y=0,z=0}
+let bgC:vec3 = {x=0.2,y=0,z=0}
 
 let u32color (c:vec3):u32 =
     let r = u32.f64 (c.x * 255)
     let g = u32.f64 (c.y * 255)
     let b = u32.f64 (c.z * 255)
-    in (b + (g*256) + (r*65536))
+    in (r + (g*256) + (b*65536))
 
 type intersection 'shape =  #Yes f64 shape | #No
 
@@ -56,7 +56,7 @@ let scene_intersect_sphere [obj](s:[obj]sphere)(r:ray) =
             let N = vec.normalise(vec.(h - sp.o))
             in (true,h,N,sp.mat)
 
-let scene_intersect [obj](s:state[obj])(r:ray) = 
+let scene_intersect [obj][la](s:state[obj][la])(r:ray) = 
 scene_intersect_sphere s.s r
 
 let scene_intersect_flood_light (l:light)(p:vec3) = 
@@ -64,7 +64,7 @@ let scene_intersect_flood_light (l:light)(p:vec3) =
     in (d,l.c)
 
  
-let scene_intersect_light_sub [obj](s:state[obj])(p:vec3)(l:light) = 
+let scene_intersect_light_sub [obj][la](s:state[obj][la])(p:vec3)(l:light) = 
     let (dir,c)  = scene_intersect_flood_light l p 
     let (hit,h,N,mat) = scene_intersect s {o=p,d=dir}
     in if (false) then (vec.zero,vec.zero) else 
@@ -81,8 +81,8 @@ let scene_intersect_light_sub [obj](s:state[obj])(p:vec3)(l:light) =
 let vec_twotup_add (a:vec3,b:vec3)(c:vec3,d:vec3):(vec3,vec3) = (vec.(a+c),vec.(b+d))
 
 
-let scene_intersect_light [lights][obj](s:state[obj])(l:[lights]light)(p:vec3) =
-    reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p lp) l)
+let scene_intersect_light [la][obj](s:state[obj][la])(p:vec3) =
+    reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p lp) s.l)
 
 
 let reflect(I:vec3)(N:vec3) = vec.(I - vec.scale 2 vec.(N*vec.(I*N)))
@@ -97,17 +97,24 @@ let refract(I:vec3)(N:vec3)(t:f64)(i:f64):vec3 =
         let les = (eta*cosi) - (f64.sqrt(k))
         in vec.((vec.scale eta I) + (vec.scale les N))
 
-let ray_cast [obj](s:state[obj]) (h) (w):u32 = 
+let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 = 
     let x = ((f64.i64 w)+0.5)-((f64.u32 s.w)/2)
     let y = -((f64.i64 h)+0.5)+((f64.u32 s.h)/2)
     let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
     let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
     let r:ray = {o=s.c.c.o,d=d}
     let (hit,h,N,mat) = scene_intersect s r 
-    in if(hit) then u32color mat.diffuse_color else u32color bgC
+    in if(hit) then 
+    let  (diffuse,spec)  = scene_intersect_light s h 
+    let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color  * diffuse)
+    let sp = vec.scale mat.albedo.D spec
+    let refr = 0.1
+    let refl = 0.1
+    in u32color vec.(diff + sp) --+ refl + refr
+    else u32color bgC
 
-entry main [obj](h:i64) (w:i64) (s:state[obj]):[h][w]u32 = 
-let s:state[obj] = s with h = u32.i64 h with w = u32.i64 w 
+entry main [obj][la](h:i64) (w:i64) (s:state[obj][la]):[h][w]u32 = 
+let s:state[obj][la] = s with h = u32.i64 h with w = u32.i64 w 
     in map(\y -> 
     map(\x -> 
     ray_cast s y x
