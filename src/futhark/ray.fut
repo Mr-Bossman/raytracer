@@ -65,9 +65,12 @@ let reflect(I:vec3)(N:vec3) = vec.(I - vec.scale 2 vec.(N*vec.(I*N)))
 
 
 let refract(I:vec3)(N:vec3)(t:f64)(i:f64):vec3 =
-    let cosi = vec.dot I N --need to constran to -1 and 1
-    --if(cosai < 0) then let cosi = vec.dot -I N
-    let eta = i/t
+    let cosai = (-1)*(vec.dot I N)
+    let (cosi,eta) = if(cosai < 0) then 
+        let tmp = (-1)*(vec.dot (vec.scale (-1) I) N)
+        in (f64.max (-1) (f64.min 1 tmp ),t/i) 
+    else 
+        (f64.max (-1) (f64.min 1 cosai ),i/t)
     let k = 1 - ((eta*eta)*(1-(cosi*cosi)))
     in if (k < 0) then {x=1,y=0,z=0} else 
         let les = (eta*cosi) - (f64.sqrt(k))
@@ -105,9 +108,10 @@ let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 =
     let  (diffuse,spec)  = scene_intersect_light s h N
     let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
     let sp = vec.scale mat.albedo.D spec
-    let refr = 0.1
-    let refl = 0.1
-    in u32color vec.(diff+sp) --+ refl + refr
+    let refr = vec.normalise(refract d N mat.refractive_index 1)
+    let refl = vec.normalise(reflect d N)
+    --need recursion
+    in u32color vec.(diff+sp)
     else u32color bgC
 
 entry main [obj][la](h:i64) (w:i64) (s:state[obj][la]):[h][w]u32 = 
