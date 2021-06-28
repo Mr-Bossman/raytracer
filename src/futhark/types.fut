@@ -15,5 +15,4 @@ type material = {refractive_index:f64,albedo:albedo,diffuse_color:vec3,specular_
 type sphere = {o:vec3,r:f64,mat:material}
 
 
-type triangle = (vec3,vec3,vec3,vec3)
-entry Triangle (a: vec3) (b: vec3) (c: vec3) (d: vec3): triangle = (a,b,c,d) 
+type triangle = {a:vec3,b:vec3,c:vec3,n:vec3,mat:material}

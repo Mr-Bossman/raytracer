@@ -56,7 +56,49 @@ FlightArr FlightArrC(Fcontext ctx, std::vector<Light> l){
     futhark_free_opaque_arr_vec3_1d(ctx,pos);
     return ret;
 }
+/*
+FlightArr FlightArrC(Fcontext ctx, std::vector<Light> l){
+    std::vector<FdoubleA> jenk;
+    double* x = new double[l.size()];
+    double* y = new double[l.size()];
+    double* z = new double[l.size()];
+    double* r = new double[l.size()];
+    double* g = new double[l.size()];
+    double* b = new double[l.size()];
+    for(size_t i = 0; i < l.size(); i++){
+        x[i] = l[i].position.x;
+        y[i] = l[i].position.y;
+        z[i] = l[i].position.z;
+        r[i] = l[i].intensity.r;
+        g[i] = l[i].intensity.g;
+        b[i] = l[i].intensity.b;
+    }
+    jenk.push_back(futhark_new_f64_1d(ctx,x,l.size()));
+    jenk.push_back(futhark_new_f64_1d(ctx,y,l.size()));
+    jenk.push_back(futhark_new_f64_1d(ctx,z,l.size()));
+    jenk.push_back(futhark_new_f64_1d(ctx,r,l.size()));
+    jenk.push_back(futhark_new_f64_1d(ctx,g,l.size()));
+    jenk.push_back(futhark_new_f64_1d(ctx,b,l.size()));
+    delete[] x;
+    delete[] y;
+    delete[] z;
+    delete[] r;
+    delete[] g;
+    delete[] b;
 
+    struct futhark_opaque_arr_vec3_1d *c;
+    struct futhark_opaque_arr_vec3_1d *pos;
+    futhark_entry_VecA(ctx,&c,jenk[3],jenk[4],jenk[5]);
+    futhark_entry_VecA(ctx,&pos,jenk[0],jenk[1],jenk[2]);
+    FlightArr ret;
+    futhark_entry_LightA(ctx,&ret,pos,c);
+    for(auto bruh:jenk){
+        futhark_free_f64_1d(ctx,bruh);
+    }
+    futhark_free_opaque_arr_vec3_1d(ctx,c);
+    futhark_free_opaque_arr_vec3_1d(ctx,pos);
+    return ret;
+}*/
 Fsphere FsphereC(Fcontext ctx, Sphere s){
     Fvec3 vec;
     Fsphere sp;

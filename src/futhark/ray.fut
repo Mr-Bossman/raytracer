@@ -8,11 +8,13 @@ entry Vec (xs: f64) (ys: f64)(zs: f64) : vec3 = {x=xs,y=ys,z=zs}
 entry Cam (c:ray)(fov: f64):cam = {c=c,fov=fov}
 entry Albedo (a:f64)(D:f64)(at:f64)(ap:f64):albedo = {a=a,D=D,at=at,ap=ap}
 entry Material (refractive_index:f64)(albedo:albedo)(diffuse_color:vec3)(specular_exponent:f64):material = {refractive_index=refractive_index,albedo=albedo,diffuse_color=diffuse_color,specular_exponent=specular_exponent}
+entry Triangle (a: vec3) (b: vec3) (c: vec3) (d: vec3)(mat:material): triangle = {a=a,b=b,c=c,n=d,mat=mat}
 
 entry VecA [cn](xs: [cn]f64) (ys: [cn]f64)(zs: [cn]f64) : [cn]vec3 = map3(\x y z -> {x=x,y=y,z=z}) xs ys zs
 entry AlbedoA [cn] (a:[cn]f64)(D:[cn]f64)(at:[cn]f64)(ap:[cn]f64) : [cn]albedo = map4(\a D at ap-> {a=a,D=D,at=at,ap=ap}) a D at ap
 entry MaterialA [cn](refractive_index:[cn]f64)(albedo:[cn]albedo)(diffuse_color:[cn]vec3)(specular_exponent:[cn]f64):[cn]material = map4(\refractive_index albedo diffuse_color specular_exponent -> {refractive_index=refractive_index,albedo=albedo,diffuse_color=diffuse_color,specular_exponent=specular_exponent}) refractive_index albedo diffuse_color specular_exponent
 entry SphereA [cn](o: [cn]vec3) (r: [cn]f64) (mat:[cn]material) : [cn]sphere = map3(\o r mat -> {o=o,r=r,mat=mat}) o r mat
+entry TriangleA [cn](a: [cn]vec3) (b: [cn]vec3) (c: [cn]vec3) (d: [cn]vec3)(mat:[cn]material) : [cn]triangle = map5(\a b c d mat-> {a=a,b=b,c=c,n=d,mat=mat}) a b c d mat
 entry LightA [cn](o: [cn]vec3) (c: [cn]vec3): [cn]light = map2(\o c -> {o=o,c=c}) o c
 type state[cn][la] = {l:[la]light,s:[cn]sphere,c:cam,h:u32,w:u32}
 entry State [obj][la](l:[la]light)(s: [obj]sphere)(c:cam)(h: u32)(w: u32): state[obj][la] = {l=l,s=s,c=c,h=h,w=w}
@@ -40,6 +42,23 @@ let ray_sphere_intersect (r:ray) (s:sphere):intersection sphere=
     in if (t0 < EPSILON) then 
     if (t1 < EPSILON) then #No else #Yes t0 s
     else #Yes t0 s
+
+let ray_triangle_intersect(r:ray) (t:triangle):intersection triangle =
+    let e1 = vec.(t.b - t.a)
+    let e2 = vec.(t.c - t.a)
+    let h = vec.cross r.d e2
+    let a = vec.dot e1 h
+    in if ((f64.abs a) < EPSILON) then #No else 
+        let f = 1.0/a
+        let s = vec.(r.o - t.a)
+        let u = f * (vec.dot s h)
+        in if (u < 0.0) || (u > 1.0) then #No else
+            let q = vec.cross s e1
+            let v = f * (vec.dot r.d q)
+            in if (v < 0.0) || (u+v > 1.0) then #No else
+                let t0 = f * (vec.dot e2 q)
+                in if t0 > EPSILON then #Yes t0 t
+                else #No
 
 
 let scene_intersect_check 'shape  (a: intersection shape) (b: intersection shape):intersection shape  = match a
