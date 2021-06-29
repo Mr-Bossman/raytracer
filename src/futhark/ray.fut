@@ -72,24 +72,32 @@ let scene_intersect_check 'shape  (a: intersection shape) (b: intersection shape
 let scene_intersect_triangle [tr](t:[tr]triangle)(r:ray) = 
     let closest = reduce(scene_intersect_check) #No (map(\tk -> ray_triangle_intersect r tk) t)
     in match closest
-        case #No -> (false,vec.zero,vec.zero,Dmat)
+        case #No -> (false,vec.zero,vec.zero,0,Dmat)
         case #Yes t0 t -> let h = vec.(r.o + vec.scale t0 r.d)
             let e1 = vec.(t.b - t.a)
             let e2 = vec.(t.c - t.a)
             let N = vec.normalise (vec.cross e1 e2)
             -- let N = t.n
-            in (true,h,N,t.mat)
+            in (true,h,N,t0,t.mat)
 
 let scene_intersect_sphere [obj](s:[obj]sphere)(r:ray) = 
     let closest = reduce(scene_intersect_check) #No (map(\sf -> ray_sphere_intersect r sf) s)
     in match closest
-        case #No -> (false,vec.zero,vec.zero,Dmat)
-        case #Yes t0 sp -> let h = vec.(r.o + vec.scale t0 r.d)
+        case #No -> (false,vec.zero,vec.zero,0,Dmat)
+        case #Yes t0 sp -> 
+            let h = vec.(r.o + vec.scale t0 r.d)
             let N = vec.normalise(vec.(h - sp.o))
-            in (true,h,N,sp.mat)
+            in (true,h,N,t0,sp.mat)
 
 let scene_intersect [obj][la][tr](s:state[obj][la][tr])(r:ray) = 
-(scene_intersect_triangle s.t r)
+let (st,sh,sN,t0a,smat) = (scene_intersect_sphere s.s r) 
+let (tt,th,tN,t0b,tmat)  = (scene_intersect_triangle s.t r)
+in if st then 
+    if (tt && (t0b < t0a)) then 
+        (tt,th,tN,tmat)
+    else (st,sh,sN,smat) 
+else (tt,th,tN,tmat)
+
 
 let scene_intersect_flood_light (l:light)(p:vec3) =  vec.normalise(vec.(l.o - p)) 
 
@@ -147,7 +155,7 @@ let ray_cast [obj][la][tr](s:state[obj][la][tr]) (h) (w):u32 =
     let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
     let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
     let r:ray = {o=s.c.c.o,d=d}
-    let bounces:i64 = 1
+    let bounces:i64 = 2
 
     --jenk
     -- do diffuse light first

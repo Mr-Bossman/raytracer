@@ -64,6 +64,7 @@ FtriangleArr FtriangleArrC(Fcontext ctx, std::vector<Triangle> l){
     for(size_t i = 0; i < ((3*4) + 3 + 4 + 2); i++){
         jenkeir.push_back(new double[l.size()]);
     }
+    #pragma omp parallel for
     for(size_t i = 0; i < l.size(); i++){
         jenkeir[0][i] = l[i].a.x;
         jenkeir[1][i] = l[i].a.y;
