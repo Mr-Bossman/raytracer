@@ -136,16 +136,41 @@ let scene_intersect_light [obj][la][tr](s:state[obj][la][tr])(p:vec3)(N:vec3) =
     reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p N lp) s.l)
 
 
-let cast_ray_once [obj][la][tr](s:state[obj][la][tr])(r:ray):(vec3,vec3,vec3,vec3,material) = 
+let cast_ray_rec [obj][la][tr](s:state[obj][la][tr])(r:ray)(ma:material)(hitg:bool):(vec3,(bool,vec3,vec3,vec3,material)) = 
+    if hitg then
+        let (hit,h,N,mal) = scene_intersect s r 
+        in if(hit) then 
+            let mat = mal with albedo.at = (mal.albedo.at*ma.albedo.at) with albedo.ap = (mal.albedo.ap*ma.albedo.ap) 
+            let  (diffuse,spec)  = scene_intersect_light s h N
+            let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
+            let sp = vec.scale mat.albedo.D spec
+            let refl = vec.normalise(reflect r.d N)
+            let refr = vec.normalise(refract r.d N mat.refractive_index 1)
+            in (vec.(diff+sp),(true,h,refl,refr,mat))
+        else (bgC,(false,vec.zero,vec.zero,vec.zero,ma))
+    else (vec.zero,(false,vec.zero,vec.zero,vec.zero,ma))
+
+
+
+let cast_ray_once [obj][la][tr](s:state[obj][la][tr])(r:ray):vec3 = 
     let (hit,h,N,mat) = scene_intersect s r 
     in if(hit) then 
         let  (diffuse,spec)  = scene_intersect_light s h N
         let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
         let sp = vec.scale mat.albedo.D spec
-        let refr = vec.normalise(refract r.d N mat.refractive_index 1)
+        let bounces:i64 = 10
+
         let refl = vec.normalise(reflect r.d N)
-        in (vec.(diff+sp),h,refl,refr,mat)
-    else (bgC,vec.zero,vec.zero,vec.zero,mat)
+        let refr = vec.normalise(refract r.d N mat.refractive_index 1)
+        let (diff,_) = 
+            loop (c ,(H,ha,fl,_,m)) = (vec.(diff+sp),(hit,h,refl,refr,mat) ) for _ in (0...bounces) do
+                (let (cp ,ST)  = cast_ray_rec s {o=ha,d=fl} m H in (vec.(c + (vec.scale m.albedo.at cp)),ST))
+        let (c,_) = 
+            loop (c ,(H,ha,fr,_,m)) = (diff,(hit,h,refl,refr,mat) ) for _ in (0...bounces) do
+                (let (cp ,ST)  = cast_ray_rec s {o=ha,d=fr} m H in (vec.(c + (vec.scale m.albedo.ap cp)),ST))
+
+        in c
+    else bgC
 
 
 
@@ -155,22 +180,7 @@ let ray_cast [obj][la][tr](s:state[obj][la][tr]) (h) (w):u32 =
     let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
     let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
     let r:ray = {o=s.c.c.o,d=d}
-    let bounces:i64 = 2
-
-    --jenk
-    -- do diffuse light first
-    let (sc,sh,sfl,sfr,m) = cast_ray_once s r
-    let (diffuse,(_,_,_,_)) = 
-        loop (c ,(ha,fla,_,mat)) = (sc,(sh,sfl,sfr,m) ) for _ in (0...bounces) do
-            (let (cp,h,fl,fr,ma)  = cast_ray_once s {o=ha,d=fla} let alb = ma with albedo.at = (mat.albedo.at*ma.albedo.at) in (vec.(c + (vec.scale mat.albedo.at cp)),(h,fl,fr,alb)))
-
-    --do secular light second
-    let (c,(_,_,_,_)) = 
-        loop (c ,(ha,_,fra,mat)) = (diffuse,(sh,sfl,sfr,m) ) for _ in (0...bounces) do
-            (let (cp,h,fl,fr,ma)  = cast_ray_once s {o=ha,d=fra} let alb = ma with albedo.ap = (mat.albedo.ap*ma.albedo.ap) in (vec.(c + (vec.scale mat.albedo.ap cp)),(h,fl,fr,alb)))
-    --jenk
-    in u32color c
-
+    in u32color (cast_ray_once s r)
 
 entry main [obj][la][tr](h:i64) (w:i64) (s:state[obj][la][tr]):[h][w]u32 = 
 let s:state[obj][la][tr] = s with h = u32.i64 h with w = u32.i64 w 
