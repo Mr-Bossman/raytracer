@@ -20,9 +20,9 @@ entry LightA [cn](o: [cn]vec3) (c: [cn]vec3): [cn]light = map2(\o c -> {o=o,c=c}
 type state[cn][la][tr] = {l:[la]light,s:[cn]sphere,t: [tr]triangle,c:cam,h:u32,w:u32}
 entry State [obj][la][tr](l:[la]light)(s: [obj]sphere)(t: [tr]triangle)(c:cam)(h: u32)(w: u32): state[obj][la][tr] = {l=l,s=s,t=t,c=c,h=h,w=w}
 
-
 let EPSILON:f64 = 0.001
 let bgC:vec3 = {x=0.2,y=0.7,z=0.8}
+let Dmat:material = {refractive_index=1,albedo={a=1,D=0.6,at=0.1,ap=0},diffuse_color=bgC,specular_exponent=50}
 
 let u32color (c:vec3):u32 =
     let m = f64.max c.x (f64.max c.y c.z)
@@ -70,9 +70,9 @@ let scene_intersect_check 'shape  (a: intersection shape) (b: intersection shape
     case #Yes dist_b _ -> if dist_a < dist_b then a else b
 
 let scene_intersect_triangle [tr](t:[tr]triangle)(r:ray) = 
-    let closest = reduce(scene_intersect_check) #No (map(\tr -> ray_triangle_intersect r tr) t)
+    let closest = reduce(scene_intersect_check) #No (map(\tk -> ray_triangle_intersect r tk) t)
     in match closest
-        case #No -> (false,vec.zero,vec.zero,t[0].mat) -- no triangle ex
+        case #No -> (false,vec.zero,vec.zero,Dmat)
         case #Yes t0 t -> let h = vec.(r.o + vec.scale t0 r.d)
             let e1 = vec.(t.b - t.a)
             let e2 = vec.(t.c - t.a)
@@ -83,13 +83,13 @@ let scene_intersect_triangle [tr](t:[tr]triangle)(r:ray) =
 let scene_intersect_sphere [obj](s:[obj]sphere)(r:ray) = 
     let closest = reduce(scene_intersect_check) #No (map(\sf -> ray_sphere_intersect r sf) s)
     in match closest
-        case #No -> (false,vec.zero,vec.zero,s[0].mat)-- no sphere ex
+        case #No -> (false,vec.zero,vec.zero,Dmat)
         case #Yes t0 sp -> let h = vec.(r.o + vec.scale t0 r.d)
             let N = vec.normalise(vec.(h - sp.o))
             in (true,h,N,sp.mat)
 
 let scene_intersect [obj][la][tr](s:state[obj][la][tr])(r:ray) = 
-(scene_intersect_sphere s.s r) -- (scene_intersect_triangle s.t r)
+(scene_intersect_sphere s.s r) --(scene_intersect_triangle s.t r)
 
 let scene_intersect_flood_light (l:light)(p:vec3) =  vec.normalise(vec.(l.o - p)) 
 
@@ -147,7 +147,7 @@ let ray_cast [obj][la][tr](s:state[obj][la][tr]) (h) (w):u32 =
     let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
     let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
     let r:ray = {o=s.c.c.o,d=d}
-    let bounces:i64 = 4
+    let bounces:i64 = 1
 
     --jenk
     -- do diffuse light first

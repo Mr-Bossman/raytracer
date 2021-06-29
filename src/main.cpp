@@ -249,7 +249,7 @@ int main(int argc, char*argv[]) {
         //render(objects, lights,cam);
         renderFUTH(cam,objects,lights);
         if(end)signal_hand(0);
-        //SDL_Log("{%lf,%lf,%lf},{%lf,%lf,%lf}",cam.pos.x,cam.pos.y,cam.pos.z,cam.dir.x,cam.dir.y,cam.dir.z);
+        SDL_Log("{%lf,%lf,%lf},{%lf,%lf,%lf}",cam.pos.x,cam.pos.y,cam.pos.z,cam.dir.x,cam.dir.y,cam.dir.z);
         sdl_frame();
     }
     sdl_free();
