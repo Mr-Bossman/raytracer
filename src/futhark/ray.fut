@@ -20,7 +20,7 @@ entry LightA [cn](o: [cn]vec3) (c: [cn]vec3): [cn]light = map2(\o c -> {o=o,c=c}
 type state[cn][la][tr] = {l:[la]light,s:[cn]sphere,t: [tr]triangle,c:cam,h:u32,w:u32}
 entry State [obj][la][tr](l:[la]light)(s: [obj]sphere)(t: [tr]triangle)(c:cam)(h: u32)(w: u32): state[obj][la][tr] = {l=l,s=s,t=t,c=c,h=h,w=w}
 
-let EPSILON:f64 = 0.001
+let EPSILON:f64 = 0.00001
 let bgC:vec3 = {x=0.2,y=0.7,z=0.8}
 let Dmat:material = {refractive_index=1,albedo={a=1,D=0.6,at=0.1,ap=0},diffuse_color=bgC,specular_exponent=50}
 
@@ -144,9 +144,7 @@ let cast_ray_rec [obj][la][tr](s:state[obj][la][tr])(r:ray)(ma:material)(hitg:bo
             let  (diffuse,spec)  = scene_intersect_light s h N
             let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
             let sp = vec.scale mat.albedo.D spec
-            let refl = vec.normalise(reflect r.d N)
-            let refr = vec.normalise(refract r.d N mat.refractive_index 1)
-            in (vec.(diff+sp),(true,h,refl,refr,mat))
+            in (vec.(diff+sp),(true,h,r.d,N,mat))
         else (bgC,(false,vec.zero,vec.zero,vec.zero,ma))
     else (vec.zero,(false,vec.zero,vec.zero,vec.zero,ma))
 
@@ -160,14 +158,15 @@ let cast_ray_once [obj][la][tr](s:state[obj][la][tr])(r:ray):vec3 =
         let sp = vec.scale mat.albedo.D spec
         let bounces:i64 = 10
 
-        let refl = vec.normalise(reflect r.d N)
-        let refr = vec.normalise(refract r.d N mat.refractive_index 1)
+
         let (diff,_) = 
-            loop (c ,(H,ha,fl,_,m)) = (vec.(diff+sp),(hit,h,refl,refr,mat) ) for _ in (0...bounces) do
-                (let (cp ,ST)  = cast_ray_rec s {o=ha,d=fl} m H in (vec.(c + (vec.scale m.albedo.at cp)),ST))
+            loop (c ,(H,ha,d,N,m)) = (vec.(diff+sp),(true,h,r.d,N,mat) ) for _ in (0...bounces) do
+                (let refl = vec.normalise(reflect d N)
+                let (cp ,ST)  = cast_ray_rec s {o=ha,d=refl} m H in (vec.(c + (vec.scale m.albedo.at cp)),ST))
         let (c,_) = 
-            loop (c ,(H,ha,fr,_,m)) = (diff,(hit,h,refl,refr,mat) ) for _ in (0...bounces) do
-                (let (cp ,ST)  = cast_ray_rec s {o=ha,d=fr} m H in (vec.(c + (vec.scale m.albedo.ap cp)),ST))
+            loop (c ,(H,ha,d,N,m)) = (diff,(true,h,r.d,N,mat) ) for _ in (0...bounces) do
+                (let refr = vec.normalise(refract d N mat.refractive_index 1)
+                let (cp ,ST)  = cast_ray_rec s {o=ha,d=refr} m H in (vec.(c + (vec.scale m.albedo.ap cp)),ST))
 
         in c
     else bgC
