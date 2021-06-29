@@ -57,7 +57,7 @@ FlightArr FlightArrC(Fcontext ctx, std::vector<Light> l){
     return ret;
 }
 
-FtriangleArr FlightArrC(Fcontext ctx, std::vector<Triangle> l){
+FtriangleArr FtriangleArrC(Fcontext ctx, std::vector<Triangle> l){
     std::vector<FdoubleA> jenk;
     std::vector<double*> jenkeir;
     

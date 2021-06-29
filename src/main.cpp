@@ -16,6 +16,7 @@
     Fu32_2 pixels;
     FsphereArr sphere;
     FlightArr light;
+    FtriangleArr triangle;
 //end
 
 std::atomic<bool> end (false);
@@ -153,7 +154,7 @@ void create_objects(Objects& objects ,Lights& lights){
 void renderFUTH(Cam c,const Objects &ob,const Lights &l){
     frame32 framebuffer(SCREEN_HEIGHT,SCREEN_WIDTH);
     Fcam cam = FcamC(ctx,c);
-    futhark_entry_State(ctx, &state,light,sphere,cam,SCREEN_HEIGHT,SCREEN_WIDTH);
+    futhark_entry_State(ctx, &state,light,sphere,triangle,cam,SCREEN_HEIGHT,SCREEN_WIDTH);
     futhark_entry_main(ctx,&pixels,SCREEN_HEIGHT,SCREEN_WIDTH,state);
     futhark_values_u32_2d(ctx,pixels,pix);
     futhark_free_opaque_cam(ctx,cam);
@@ -211,6 +212,7 @@ int main(int argc, char*argv[]) {
     cfg = futhark_context_config_new();
     ctx = futhark_context_new(cfg);
     pixels = futhark_new_u32_2d(ctx,pix,SCREEN_HEIGHT,SCREEN_WIDTH);
+    triangle = FtriangleArrC(ctx,objects.triangle);
     sphere = FsphereArrC(ctx,objects.sphere);
     light = FlightArrC(ctx,lights.light);
     // end
@@ -227,7 +229,7 @@ int main(int argc, char*argv[]) {
                 xM += event.motion.xrel*MOUSE_SENSITIVITY;
                 yM += event.motion.yrel*MOUSE_SENSITIVITY;
                 SDL_GetWindowSize(sdl_getwindow(), &winsizeX,&winsizeY);
-                cam.dir = vec3{(yM*M_PI/winsizeY)*1.,(xM*M_PI/winsizeX)*1,0};
+                cam.dir = vec3{-(yM*M_PI/winsizeY)*1.,(xM*M_PI/winsizeX)*1,0};
             }
         }
         if(keystates[SDL_SCANCODE_ESCAPE])

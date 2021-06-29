@@ -28,6 +28,7 @@ Fcam FcamC(Fcontext ctx, Cam c);
 Falbedo FalbedoC(Fcontext ctx, vec4 al);
 Fvec3 FcolorV3C(Fcontext ctx, color C);
 Fmaterial FmaterialC(Fcontext ctx, Material al);
+FtriangleArr FtriangleArrC(Fcontext ctx, std::vector<Triangle> l);
 FsphereArr FsphereArrC(Fcontext ctx, std::vector<Sphere> s);
 FlightArr FlightArrC(Fcontext ctx, std::vector<Light> l);
 #endif
