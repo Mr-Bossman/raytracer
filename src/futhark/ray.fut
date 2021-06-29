@@ -89,7 +89,7 @@ let scene_intersect_sphere [obj](s:[obj]sphere)(r:ray) =
             in (true,h,N,sp.mat)
 
 let scene_intersect [obj][la][tr](s:state[obj][la][tr])(r:ray) = 
-(scene_intersect_sphere s.s r) --(scene_intersect_triangle s.t r)
+(scene_intersect_triangle s.t r)
 
 let scene_intersect_flood_light (l:light)(p:vec3) =  vec.normalise(vec.(l.o - p)) 
 
