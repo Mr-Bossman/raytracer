@@ -18,6 +18,7 @@ typedef struct futhark_context_config* Fconfig;
 typedef struct futhark_opaque_arr_triangle_1d* FtriangleArr;
 typedef struct futhark_opaque_arr_sphere_1d* FsphereArr;
 typedef struct futhark_opaque_arr_light_1d* FlightArr;
+typedef struct futhark_opaque_arr_vec3_1d* Fvec3Arr;
 typedef struct futhark_u32_2d* Fu32_2;
 typedef struct futhark_f64_1d* FdoubleA;
 Fvec3 Fvec3C(Fcontext ctx, vec3 pos);

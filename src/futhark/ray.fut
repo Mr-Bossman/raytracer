@@ -16,6 +16,7 @@ entry MaterialA [cn](refractive_index:[cn]f64)(albedo:[cn]albedo)(diffuse_color:
 entry SphereA [cn](o: [cn]vec3) (r: [cn]f64) (mat:[cn]material) : [cn]sphere = map3(\o r mat -> {o=o,r=r,mat=mat}) o r mat
 entry TriangleA [cn](a: [cn]vec3) (b: [cn]vec3) (c: [cn]vec3) (d: [cn]vec3)(mat:[cn]material) : [cn]triangle = map5(\a b c d mat-> {a=a,b=b,c=c,n=d,mat=mat}) a b c d mat
 entry LightA [cn](o: [cn]vec3) (c: [cn]vec3): [cn]light = map2(\o c -> {o=o,c=c}) o c
+
 type state[cn][la] = {l:[la]light,s:[cn]sphere,c:cam,h:u32,w:u32}
 entry State [obj][la](l:[la]light)(s: [obj]sphere)(c:cam)(h: u32)(w: u32): state[obj][la] = {l=l,s=s,c=c,h=h,w=w}
 
@@ -136,13 +137,19 @@ let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 =
     let z = -(f64.u32 s.h)/(2*f64.tan(s.c.fov/2))
     let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
     let r:ray = {o=s.c.c.o,d=d}
-
+    let bounces:i64 = 10
 
     --jenk
+    -- do diffuse light first
     let (sc,sh,sfl,sfr,m) = cast_ray_once s r
-    let (c,(_,_,_,_,_)) = 
-    loop (c ,(_,ha,fla,_,mat)) = (sc,(sc,sh,sfl,sfr,m) ) for _ in (0...10) do
-        (let (cp,h,fl,fr,ma)  = cast_ray_once s {o=ha,d=fla} let alb = ma with albedo.at = (mat.albedo.at*ma.albedo.at) in (vec.(c + (vec.scale mat.albedo.at cp)),(cp,h,fl,fr,alb)))
+    let (diffuse,(_,_,_,_)) = 
+        loop (c ,(ha,fla,_,mat)) = (sc,(sh,sfl,sfr,m) ) for _ in (0...bounces) do
+            (let (cp,h,fl,fr,ma)  = cast_ray_once s {o=ha,d=fla} let alb = ma with albedo.at = (mat.albedo.at*ma.albedo.at) in (vec.(c + (vec.scale mat.albedo.at cp)),(h,fl,fr,alb)))
+
+    --do secular light second
+    let (c,(_,_,_,_)) = 
+        loop (c ,(ha,_,fra,mat)) = (diffuse,(sh,sfl,sfr,m) ) for _ in (0...bounces) do
+            (let (cp,h,fl,fr,ma)  = cast_ray_once s {o=ha,d=fra} let alb = ma with albedo.ap = (mat.albedo.ap*ma.albedo.ap) in (vec.(c + (vec.scale mat.albedo.ap cp)),(h,fl,fr,alb)))
     --jenk
     in u32color c
 

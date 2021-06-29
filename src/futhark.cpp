@@ -43,8 +43,8 @@ FlightArr FlightArrC(Fcontext ctx, std::vector<Light> l){
     delete[] g;
     delete[] b;
 
-    struct futhark_opaque_arr_vec3_1d *c;
-    struct futhark_opaque_arr_vec3_1d *pos;
+    Fvec3Arr c;
+    Fvec3Arr pos;
     futhark_entry_VecA(ctx,&c,jenk[3],jenk[4],jenk[5]);
     futhark_entry_VecA(ctx,&pos,jenk[0],jenk[1],jenk[2]);
     FlightArr ret;
@@ -56,49 +56,65 @@ FlightArr FlightArrC(Fcontext ctx, std::vector<Light> l){
     futhark_free_opaque_arr_vec3_1d(ctx,pos);
     return ret;
 }
-/*
-FlightArr FlightArrC(Fcontext ctx, std::vector<Light> l){
-    std::vector<FdoubleA> jenk;
-    double* x = new double[l.size()];
-    double* y = new double[l.size()];
-    double* z = new double[l.size()];
-    double* r = new double[l.size()];
-    double* g = new double[l.size()];
-    double* b = new double[l.size()];
-    for(size_t i = 0; i < l.size(); i++){
-        x[i] = l[i].position.x;
-        y[i] = l[i].position.y;
-        z[i] = l[i].position.z;
-        r[i] = l[i].intensity.r;
-        g[i] = l[i].intensity.g;
-        b[i] = l[i].intensity.b;
-    }
-    jenk.push_back(futhark_new_f64_1d(ctx,x,l.size()));
-    jenk.push_back(futhark_new_f64_1d(ctx,y,l.size()));
-    jenk.push_back(futhark_new_f64_1d(ctx,z,l.size()));
-    jenk.push_back(futhark_new_f64_1d(ctx,r,l.size()));
-    jenk.push_back(futhark_new_f64_1d(ctx,g,l.size()));
-    jenk.push_back(futhark_new_f64_1d(ctx,b,l.size()));
-    delete[] x;
-    delete[] y;
-    delete[] z;
-    delete[] r;
-    delete[] g;
-    delete[] b;
 
-    struct futhark_opaque_arr_vec3_1d *c;
-    struct futhark_opaque_arr_vec3_1d *pos;
-    futhark_entry_VecA(ctx,&c,jenk[3],jenk[4],jenk[5]);
-    futhark_entry_VecA(ctx,&pos,jenk[0],jenk[1],jenk[2]);
-    FlightArr ret;
-    futhark_entry_LightA(ctx,&ret,pos,c);
+FtriangleArr FlightArrC(Fcontext ctx, std::vector<Triangle> l){
+    std::vector<FdoubleA> jenk;
+    std::vector<double*> jenkeir;
+    
+    for(size_t i = 0; i < ((3*4) + 3 + 4 + 2); i++){
+        jenkeir.push_back(new double[l.size()]);
+    }
+    for(size_t i = 0; i < l.size(); i++){
+        jenkeir[0][i] = l[i].a.x;
+        jenkeir[1][i] = l[i].a.y;
+        jenkeir[2][i] = l[i].a.z;
+        jenkeir[3][i] = l[i].b.x;
+        jenkeir[4][i] = l[i].b.y;
+        jenkeir[5][i] = l[i].b.z;
+        jenkeir[6][i] = l[i].c.x;
+        jenkeir[7][i] = l[i].c.y;
+        jenkeir[8][i] = l[i].c.z;
+        jenkeir[9][i] = 0;
+        jenkeir[10][i] = 0;
+        jenkeir[11][i] = 0;
+        jenkeir[12][i] = l[i].material.diffuse_color.r;
+        jenkeir[13][i] = l[i].material.diffuse_color.g;
+        jenkeir[14][i] = l[i].material.diffuse_color.b;
+        jenkeir[15][i] = l[i].material.specular_exponent;
+        jenkeir[16][i] = l[i].material.refractive_index;
+        jenkeir[17][i] = l[i].material.albedo[0];
+        jenkeir[18][i] = l[i].material.albedo[1];
+        jenkeir[19][i] = l[i].material.albedo[2];
+        jenkeir[20][i] = l[i].material.albedo[3];
+
+
+    }
+    for(auto bruh : jenkeir){
+        jenk.push_back(futhark_new_f64_1d(ctx,bruh,l.size()));
+        delete[] bruh;
+    }
+
+    Fvec3Arr crap[5]; // color a b c and N
+    for(size_t i = 0; i < 5; i++){
+        futhark_entry_VecA(ctx,&(crap[i]),jenk[i*3],jenk[(i*3)+1],jenk[(i*3)+2]);
+    }
+    FtriangleArr ret;
+    struct futhark_opaque_arr_albedo_1d* al;
+    futhark_entry_AlbedoA(ctx,&al,jenk[17],jenk[18],jenk[19],jenk[20]);
+    struct futhark_opaque_arr_material_1d* mat;
+    futhark_entry_MaterialA(ctx,&mat,jenk[16],al,crap[4],jenk[15]);
+
+    futhark_entry_TriangleA(ctx,&ret,crap[0],crap[1],crap[2],crap[3],mat);
     for(auto bruh:jenk){
         futhark_free_f64_1d(ctx,bruh);
     }
-    futhark_free_opaque_arr_vec3_1d(ctx,c);
-    futhark_free_opaque_arr_vec3_1d(ctx,pos);
+    for(size_t i = 0; i < 5; i++){
+        futhark_free_opaque_arr_vec3_1d(ctx,crap[i]);
+    }
+    futhark_free_opaque_arr_material_1d(ctx,mat);
+    futhark_free_opaque_arr_albedo_1d(ctx,al);
     return ret;
-}*/
+}
 Fsphere FsphereC(Fcontext ctx, Sphere s){
     Fvec3 vec;
     Fsphere sp;
@@ -169,8 +185,8 @@ FsphereArr FsphereArrC(Fcontext ctx, std::vector<Sphere> s){
 
 
 
-    struct futhark_opaque_arr_vec3_1d *c;
-    struct futhark_opaque_arr_vec3_1d *pos;
+    Fvec3Arr c;
+    Fvec3Arr pos;
     futhark_entry_VecA(ctx,&c,jenk[6],jenk[7],jenk[8]);
     futhark_entry_VecA(ctx,&pos,jenk[0],jenk[1],jenk[2]);
     struct futhark_opaque_arr_albedo_1d* al;
