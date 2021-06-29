@@ -117,7 +117,7 @@ let scene_intersect_light [la][obj](s:state[obj][la])(p:vec3)(N:vec3) =
     reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p N lp) s.l)
 
 
-let cast_ray_once [obj][la](s:state[obj][la])(r:ray):(vec3,vec3,vec3,vec3) = 
+let cast_ray_once [obj][la](s:state[obj][la])(r:ray):(vec3,vec3,vec3,vec3,material) = 
     let (hit,h,N,mat) = scene_intersect s r 
     in if(hit) then 
         let  (diffuse,spec)  = scene_intersect_light s h N
@@ -125,8 +125,8 @@ let cast_ray_once [obj][la](s:state[obj][la])(r:ray):(vec3,vec3,vec3,vec3) =
         let sp = vec.scale mat.albedo.D spec
         let refr = vec.normalise(refract r.d N mat.refractive_index 1)
         let refl = vec.normalise(reflect r.d N)
-        in (vec.(diff+sp),h,refl,refr)
-    else (bgC,vec.zero,vec.zero,vec.zero)
+        in (vec.(diff+sp),h,refl,refr,mat)
+    else (bgC,vec.zero,vec.zero,vec.zero,mat)
 
 
 
@@ -137,11 +137,13 @@ let ray_cast [obj][la](s:state[obj][la]) (h) (w):u32 =
     let d = vec.normalise (vec.rot_y  s.c.c.d.y  (vec.rot_x  s.c.c.d.x {x=x,y=y,z=z}))
     let r:ray = {o=s.c.c.o,d=d}
 
-    let (sc,sh,sfl,sfr) = cast_ray_once s r
-    let (c,(_,_,_,_)) = 
-    loop (c ,(_,ha,fla,_)) = (sc,(sc,sh,sfl,sfr) ) for i < 4 do
-        (let (cp,h,fl,fr)  = cast_ray_once s {o=ha,d=fla} in (vec.(cp + c),(cp,h,fl,fr)))
-    
+
+    --jenk
+    let (sc,sh,sfl,sfr,m) = cast_ray_once s r
+    let (c,(_,_,_,_,_)) = 
+    loop (c ,(_,ha,fla,_,mat)) = (sc,(sc,sh,sfl,sfr,m) ) for _ in (0...10) do
+        (let (cp,h,fl,fr,ma)  = cast_ray_once s {o=ha,d=fla} let alb = ma with albedo.at = (mat.albedo.at*ma.albedo.at) in (vec.(c + (vec.scale mat.albedo.at cp)),(cp,h,fl,fr,alb)))
+    --jenk
     in u32color c
 
 
