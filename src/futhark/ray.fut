@@ -105,18 +105,18 @@ let reflect(I:vec3)(N:vec3) = vec.(I - vec.scale 2 vec.(N*vec.(I*N)))
 
 
 let refract(I:vec3)(N:vec3)(t:f64)(i:f64):vec3 =
-    let cosai = (-1)*(vec.dot I N)
-    let (cosi,eta) = if(cosai < 0) then 
-        let tmp = (-1)*(vec.dot (vec.scale (-1) I) N)
-        in (f64.max (-1) (f64.min 1 tmp ),t/i) 
+    let cosai = -(vec.dot I N)
+    let (cosi,eta,nN) = if(cosai < 0) then 
+        let tmp = -cosai
+        in (f64.max (-1) (f64.min 1 tmp ),t/i,vec.scale (-1) N) 
     else 
-        (f64.max (-1) (f64.min 1 cosai ),i/t)
+        (f64.max (-1) (f64.min 1 cosai ),i/t,N)
     let k = 1 - ((eta*eta)*(1-(cosi*cosi)))
     in if (k < 0) then {x=1,y=0,z=0} else 
         let les = (eta*cosi) - (f64.sqrt(k))
-        in vec.((vec.scale eta I) + (vec.scale les N))
+        in vec.((vec.scale eta I) + (vec.scale les nN))
 
-let scene_intersect_light_sub [obj][la][tr](s:state[obj][la][tr])(p:vec3)(N:vec3)(l:light) = 
+let scene_intersect_light_sub [obj][la][tr](s:state[obj][la][tr])(p:vec3)(d:vec3)(N:vec3)(l:light) = 
     let dir  = scene_intersect_flood_light l p 
     let (hit,h,_,mat) = scene_intersect s {o=p,d=dir}
     let a = vec.norm(vec.(h-p))
@@ -124,7 +124,8 @@ let scene_intersect_light_sub [obj][la][tr](s:state[obj][la][tr])(p:vec3)(N:vec3
     in if (hit && (a < b)) then (vec.zero,vec.zero) else 
         let dt = f64.max 0 (vec.dot dir N)
         let diffuse = vec.scale dt l.c
-        let base = f64.max 0 (vec.dot (vec.scale (-1) (reflect (vec.scale (-1) dir) N)) dir)
+        -- the problem seems to be the next line
+        let base = f64.max 0 (vec.dot (vec.scale (-1) (reflect (vec.scale (-1) dir) N)) d)
         let spec = vec.scale (base**mat.specular_exponent) l.c
         in (diffuse,spec) 
 
@@ -132,8 +133,8 @@ let scene_intersect_light_sub [obj][la][tr](s:state[obj][la][tr])(p:vec3)(N:vec3
 let vec_twotup_add (a:vec3,b:vec3)(c:vec3,d:vec3):(vec3,vec3) = (vec.(a+c),vec.(b+d))
 
 
-let scene_intersect_light [obj][la][tr](s:state[obj][la][tr])(p:vec3)(N:vec3) =
-    reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p N lp) s.l)
+let scene_intersect_light [obj][la][tr](s:state[obj][la][tr])(p:vec3)(N:vec3)(d:vec3) =
+    reduce (vec_twotup_add) (vec.zero,vec.zero) (map(\lp -> scene_intersect_light_sub s p d N lp) s.l)
 
 
 let cast_ray_rec [obj][la][tr](s:state[obj][la][tr])(r:ray)(ma:material)(hitg:bool):(vec3,(bool,vec3,vec3,vec3,material)) = 
@@ -141,7 +142,7 @@ let cast_ray_rec [obj][la][tr](s:state[obj][la][tr])(r:ray)(ma:material)(hitg:bo
         let (hit,h,N,mal) = scene_intersect s r 
         in if(hit) then 
             let mat = mal with albedo.at = (mal.albedo.at*ma.albedo.at) with albedo.ap = (mal.albedo.ap*ma.albedo.ap) 
-            let  (diffuse,spec)  = scene_intersect_light s h N
+            let  (diffuse,spec)  = scene_intersect_light s h N r.d
             let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
             let sp = vec.scale mat.albedo.D spec
             in (vec.(diff+sp),(true,h,r.d,N,mat))
@@ -153,10 +154,10 @@ let cast_ray_rec [obj][la][tr](s:state[obj][la][tr])(r:ray)(ma:material)(hitg:bo
 let cast_ray_once [obj][la][tr](s:state[obj][la][tr])(r:ray):vec3 = 
     let (hit,h,N,mat) = scene_intersect s r 
     in if(hit) then 
-        let  (diffuse,spec)  = scene_intersect_light s h N
+        let  (diffuse,spec)  = scene_intersect_light s h N r.d
         let diff = vec.scale mat.albedo.a vec.(mat.diffuse_color * diffuse)
         let sp = vec.scale mat.albedo.D spec
-        let bounces:i64 = 10
+        let bounces:i64 = 2
 
 
         let (diff,_) = 

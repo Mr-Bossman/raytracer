@@ -139,14 +139,14 @@ void create_objects(Objects& objects ,Lights& lights){
         Sphere{vec3{ 7,    5,   -18}, 4,     mirror},
         Sphere{vec3{-3,    10,   -17}, 2,      wood}
     },{
-        Triangle{vec3{-3,    0,   -16},vec3{-3,    10,   -17},vec3{ 7,    5,   -18},red_rubber}
+        //Triangle{vec3{-3,    0,   -16},vec3{-3,    10,   -17},vec3{ 7,    5,   -18},red_rubber}
     }
     };
 
     lights = {{
-        {{-2, 20,  40}, {1,1,1}},
-        {{ -2, 50,50}, {1,1,1}},
-        {{ -2, 20,  60}, {1,1,1}}
+        {{-2, 20,  40}, {1,0.5,0.5}},
+        {{ -2, 50,50}, {0.5,1,0.5}},
+        {{ -2, 20,  60}, {0.5,0.5,1}}
     }
     };
 

@@ -1,5 +1,5 @@
 FUT=futhark
-FUT_CC=nvcc #gcc for opencl, nvcc for cuda
+FUT_CC=gcc
 FUTFLAGS=cuda #opencl for opencl, cuda for cuda
 FUT_CC_FLAGS= -g  -O3 -shared 
 
