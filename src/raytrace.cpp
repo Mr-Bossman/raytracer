@@ -37,7 +37,7 @@ bool ray_triangle_intersect(const vec3 &orig, const vec3 &dir, const Triangle &t
 }
 
 vec3 reflect(const vec3 &I, const vec3 &N) {
-    return I - N*2.f*(I*N);
+    return I - N*2.f*I.dot(N);
 }
 
 vec3 refract(const vec3 &I, const vec3 &N, const double eta_t, const double eta_i) { // Snell's law

@@ -101,7 +101,9 @@ else (tt,th,tN,tmat)
 
 let scene_intersect_flood_light (l:light)(p:vec3) =  vec.normalise(vec.(l.o - p)) 
 
-let reflect(I:vec3)(N:vec3) = vec.(I - vec.scale 2 vec.(N*vec.(I*N)))
+let reflect(I:vec3)(N:vec3) = 
+    let tmp = 2*(vec.dot I N)
+    in vec.(I - (scale tmp N))
 
 
 let refract(I:vec3)(N:vec3)(t:f64)(i:f64):vec3 =
@@ -159,14 +161,14 @@ let cast_ray_once [obj][la][tr](s:state[obj][la][tr])(r:ray):vec3 =
         let sp = vec.scale mat.albedo.D spec
         let bounces:i64 = 2
 
-
+-- this is wrong we need to do divide and concor not straight rercustion
         let (diff,_) = 
             loop (c ,(H,ha,d,N,m)) = (vec.(diff+sp),(true,h,r.d,N,mat) ) for _ in (0...bounces) do
                 (let refl = vec.normalise(reflect d N)
                 let (cp ,ST)  = cast_ray_rec s {o=ha,d=refl} m H in (vec.(c + (vec.scale m.albedo.at cp)),ST))
         let (c,_) = 
-            loop (c ,(H,ha,d,N,m)) = (diff,(true,h,r.d,N,mat) ) for _ in (0...bounces) do
-                (let refr = vec.normalise(refract d N mat.refractive_index 1)
+           loop (c ,(H,ha,d,N,m)) = (diff,(true,h,r.d,N,mat) ) for _ in (0...bounces) do
+               (let refr = vec.normalise(refract d N mat.refractive_index 1)
                 let (cp ,ST)  = cast_ray_rec s {o=ha,d=refr} m H in (vec.(c + (vec.scale m.albedo.ap cp)),ST))
 
         in c
